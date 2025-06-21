@@ -1,0 +1,125 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: observer-postgres
+    environment:
+      POSTGRES_USER: observer
+      POSTGRES_PASSWORD: observer_password
+      POSTGRES_DB: observer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U observer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:alpine
+    container_name: observer-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Crawl4AI Service
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    container_name: observer-crawl4ai
+    ports:
+      - "8001:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Observer Core - Central Service
+  observer-core:
+    build:
+      context: ./services/observer-core
+    container_name: observer-core
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://observer:observer_password@postgres:5432/observer
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CRAWL4AI_URL=http://crawl4ai:8000
+      - WRITER_AGENT_URL=http://writer-agent:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      crawl4ai:
+        condition: service_started
+      writer-agent:
+        condition: service_started
+    restart: unless-stopped
+
+  # Writer Agent with CrewAI
+  writer-agent:
+    build:
+      context: ./services/writer-agent
+    container_name: observer-writer-agent
+    ports:
+      - "8002:8000"
+    environment:
+      - CREWAI_MODEL_NAME=gpt-4  # Can be configured based on your preferences
+      - CREWAI_API_KEY=${OPENAI_API_KEY}  # This will use the OPENAI_API_KEY from your environment
+    restart: unless-stopped
+    volumes:
+      - ./services/writer-agent/templates:/app/templates
+
+  # Telegram Bot Service
+  telegram-bot:
+    build:
+      context: ./services/telegram-bot
+    container_name: observer-telegram-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OBSERVER_CORE_URL=http://observer-core:8000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=observer
+      - POSTGRES_PASSWORD=observer_password
+      - POSTGRES_DB=observer
+    depends_on:
+      - observer-core
+      - postgres
+    restart: unless-stopped
+    
+  # pgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: observer-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@observer.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
