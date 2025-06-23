@@ -39,7 +39,7 @@ services:
     image: unclecode/crawl4ai:latest
     container_name: observer-crawl4ai
     ports:
-      - "8001:8000"
+      - "8001:11235"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -51,7 +51,8 @@ services:
   # Observer Core - Central Service
   observer-core:
     build:
-      context: ./services/observer-core
+      context: .
+      dockerfile: ./core/observer/Dockerfile
     container_name: observer-core
     ports:
       - "8000:8000"
