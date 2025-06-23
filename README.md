@@ -1,85 +1,148 @@
-# Observer Project
+# 🚀 **Observer Project**
 
-Un système modulaire basé sur des microservices pour l'extraction, le filtrage, l'évaluation, la génération et la publication de contenus d'actualité.
+**Un système modulaire de microservices pour scruter l’actualité crypto, filtrer, scorer, générer et publier du contenu différencié automatiquement, tout en gardant un contrôle humain final.**
 
-## Architecture
+---
 
-Le projet utilise une architecture hiérarchique avec un orchestrateur central (`core/observer`) et des services spécialisés (`services/`), appliquant les principes de Feature-Sliced Design (FSD) pour une meilleure organisation du code.
+## 🗂️ **Architecture**
 
-### Structure du projet
+Ce projet repose sur une **architecture orientée microservices**, orchestrée par un cœur central (`core/observer`) et enrichie de services spécialisés (`services/`).
+Chaque brique est isolée selon le principe **Feature-Sliced Design (FSD)** pour une organisation claire et évolutive.
+
+---
+
+### 📌 **Structure du projet**
 
 ```
 observer/
-├── core/                     # Services d'orchestration centraux
-│   └── observer/             # Orchestrateur principal
-│       ├── src/
-│       │   ├── features/     # Fonctionnalités découpées (FSD)
-│       │   │   ├── crawling/ # Extraction et mise en cache des contenus
-│       │   │   ├── scoring/  # Évaluation et notation des articles
-│       │   │   └── publishing/ # Publication des contenus
-│       │   └── shared/       # Code partagé au sein du core
-│       └── Dockerfile        # Configuration Docker pour observer-core
-├── services/                 # Services spécialisés
-│   ├── writer-agent/         # Service de génération de contenu (CrewAI)
-│   └── telegram-bot/         # Interface utilisateur Telegram
-├── shared/                   # Code partagé entre tous les services
-│   └── models/               # Modèles Pydantic partagés
-└── docker-compose.yml        # Orchestration des conteneurs
+├── core/                     # Orchestrateur central
+│   └── observer/
+│       ├── features/         # Modules métiers (FSD)
+│       │   ├── crawling/     # Extraction et mise en cache des titres crypto
+│       │   ├── scoring/      # Attribution de scores de pertinence
+│       │   └── publishing/   # Orchestration de la publication
+│       └── Dockerfile        # Build du service observer-core
+├── services/                 # Microservices spécialisés
+│   ├── writer-agent/         # Génération de posts via CrewAI
+│   └── telegram-bot/         # Interface Telegram pour interaction utilisateur
+├── shared/                   # Modèles et utilitaires partagés
+│   └── models/               # Modèles Pydantic communs
+├── docker-compose.yml        # Orchestration de tous les conteneurs
+└── .env.example              # Variables d'environnement d'exemple
 ```
 
-## Composants
+---
 
-- **Observer-Core**: Service central d'orchestration, notation et stockage
-- **Crawl4AI**: Service externe pour l'extraction des contenus web
-- **Writer-Agent**: Service de génération de contenus via CrewAI
-- **Telegram-Bot**: Interface utilisateur pour la gestion et publication
-- **Redis**: Cache pour les résultats d'extraction et de notation
-- **PostgreSQL**: Base de données principale
-- **pgAdmin**: Interface web de gestion de PostgreSQL
+## ⚙️ **Composants**
 
-## Prérequis
+| Composant         | Rôle                                                                    |
+| ----------------- | ----------------------------------------------------------------------- |
+| **Observer-Core** | Orchestrateur principal : collecte, scoring, coordination des workflows |
+| **Crawl4AI**      | (Optionnel) Service dédié d’extraction rapide multi-sources             |
+| **Writer-Agent**  | Générateur de contenus stylisés via **CrewAI** (ex. ton sarcastique)    |
+| **Telegram-Bot**  | Interface conviviale pour valider, éditer et publier                    |
+| **PostgreSQL**    | Base de données centrale pour titres, scores, logs                      |
+| **Redis**         | Cache et queue pour accélérer le crawl et la notation                   |
+| **pgAdmin**       | Interface web pour administrer PostgreSQL                               |
 
-- Docker et Docker Compose
-- Python 3.9+ (pour le développement local)
-- Clé API OpenAI (pour Writer-Agent)
-- Token Bot Telegram (pour Telegram-Bot)
+---
 
-## Configuration
+## 📌 **Flux Fonctionnel**
 
-1. Copiez le fichier d'exemple d'environnement:
-   ```
-   cp .env.example .env
-   ```
+1️⃣ **Crawler** : Explore plusieurs sites crypto, extrait uniquement les titres.
+2️⃣ **Scoring** : Évalue chaque titre selon pertinence et popularité pour prioriser les news chaudes.
+3️⃣ **Bot Telegram** : Propose à l’utilisateur une sélection triée (ex. Top 3).
+4️⃣ **Writer-Agent (CrewAI)** : Génère une version du titre au ton sarcastique/mème-friendly.
+5️⃣ **Validation utilisateur** : Via Telegram, le créateur peut modifier ou demander une autre version.
+6️⃣ **Publication** : Après validation, le tweet est publié automatiquement via l’API X.
 
-2. Éditez `.env` avec vos informations:
-   - `OPENAI_API_KEY`: Votre clé API OpenAI
-   - `TELEGRAM_BOT_TOKEN`: Token de votre bot Telegram
+---
 
-## Démarrage
+## ✅ **Prérequis**
+
+* **Docker & Docker Compose**
+* **Python 3.9+** (pour dev local)
+* **Clé API OpenAI** (pour Writer-Agent)
+* **Token Bot Telegram** (pour l’interface utilisateur)
+* **Compte X (Twitter)** + API Key pour la publication automatisée.
+
+---
+
+## ⚙️ **Configuration**
 
 ```bash
-# Construire et démarrer tous les services
+# Copier le fichier d’exemple d’environnement
+cp .env.example .env
+```
+
+**Dans `.env`, renseigner :**
+
+* `OPENAI_API_KEY` — Votre clé API OpenAI
+* `TELEGRAM_BOT_TOKEN` — Token de votre Bot Telegram
+* `POSTGRES_USER`, `POSTGRES_PASSWORD` — Credentials DB si custom
+* `X_API_KEY` (optionnel) — Pour l’intégration Twitter
+
+---
+
+## 🚀 **Démarrage**
+
+```bash
+# Construire et lancer tous les conteneurs en arrière-plan
 docker-compose up -d
 
-# Vérifier l'état des services
+# Vérifier l’état des services
 docker-compose ps
 ```
 
-### Points d'accès
+---
 
-- Observer-Core API: http://localhost:8000
-- Crawl4AI API: http://localhost:8001
-- Writer-Agent API: http://localhost:8002
-- pgAdmin: http://localhost:5050 (credentials: admin@observer.com / admin)
-- PostgreSQL: localhost:5432 (credentials: observer / observer_password)
-- Redis: localhost:6379
+### 🔗 **Points d’accès**
 
-## Développement
+| Service               | URL                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| **Observer-Core API** | [http://localhost:8000](http://localhost:8000)                                         |
+| **Writer-Agent API**  | [http://localhost:8002](http://localhost:8002)                                         |
+| **Telegram-Bot**      | Via votre App Telegram                                                                 |
+| **pgAdmin**           | [http://localhost:5050](http://localhost:5050) (login: `admin@observer.com` / `admin`) |
+| **PostgreSQL**        | `localhost:5432` (par défaut : `observer / observer_password`)                         |
+| **Redis**             | `localhost:6379`                                                                       |
 
-Le projet suit une architecture modulaire avec séparation des responsabilités:
+---
 
-1. **Core**: Orchestration et logique métier centrale
-2. **Services**: Composants spécialisés avec API indépendantes
-3. **Shared**: Code et modèles partagés entre services
+## 👨‍💻 **Développement**
 
-Chaque fonctionnalité dans le core suit les principes de Feature-Sliced Design pour une meilleure isolation et maintenabilité.
+* **Core** : Gère la logique métier et l’orchestration globale.
+* **Services** : Gèrent des tâches spécialisées via APIs isolées.
+* **Shared** : Fournit des modèles et outils communs pour assurer la cohérence entre modules.
+
+Le design **FSD** garantit une isolation forte par fonctionnalité, facilitant le test unitaire, l’évolution incrémentale et le déploiement CI/CD.
+
+---
+
+## ✅ **Bonnes pratiques**
+
+✔️ **Feature Sliced Design** pour chaque `features/` :
+
+* `api.py` : Routes API (ex. FastAPI)
+* `service.py` : Logique pure Python, testable sans serveur
+
+✔️ **Queue ou cache Redis** pour fiabiliser crawl et scoring.
+
+✔️ **CrewAI paramétrable** pour personnaliser le ton du contenu (sérieux, sarcastique, troll).
+
+✔️ **Logs Telegram** pour tracer les interactions et valider l’engagement.
+
+---
+
+## ✨ **Roadmap**
+
+✅ MVP avec crawl + scoring + rewriting + validation
+🚀 Ajout d’autres sources (Reddit, CoinGecko)
+🚀 Mode « planification » pour poster à heure fixe
+🚀 Dashboard web pour historique et métriques
+
+---
+
+## 🏷️ **Licence**
+
+MIT — open source, fork et améliore à ta guise 🤝
