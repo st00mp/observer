@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
 COPY core/observer/app.py ./core/observer/app.py
+COPY core/observer/features/ ./core/observer/features/
 COPY core/observer/requirements.txt ./core/observer/requirements.txt
 COPY shared/ ./shared/
 
