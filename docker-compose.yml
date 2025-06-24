@@ -4,9 +4,9 @@ services:
     image: postgres:14-alpine
     container_name: observer-postgres
     environment:
-      POSTGRES_USER: observer
-      POSTGRES_PASSWORD: observer_password
-      POSTGRES_DB: observer
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: pswd
+      POSTGRES_DB: observerdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -57,7 +57,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://observer:observer_password@postgres:5432/observer
+      - DATABASE_URL=postgresql://admin:pswd@postgres:5432/observerdb
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CRAWL4AI_URL=http://crawl4ai:8000
@@ -96,9 +96,9 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OBSERVER_CORE_URL=http://observer-core:8000
       - POSTGRES_HOST=postgres
-      - POSTGRES_USER=observer
-      - POSTGRES_PASSWORD=observer_password
-      - POSTGRES_DB=observer
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pswd
+      - POSTGRES_DB=observerdb
     depends_on:
       - observer-core
       - postgres
@@ -110,7 +110,7 @@ services:
     container_name: observer-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@observer.com
-      PGADMIN_DEFAULT_PASSWORD: admin_password
+      PGADMIN_DEFAULT_PASSWORD: pswd
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
