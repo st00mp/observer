@@ -7,8 +7,13 @@ COPY core/observer/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
-COPY core/observer/ ./core/observer/
+COPY core/observer/app.py ./core/observer/app.py
+COPY core/observer/requirements.txt ./core/observer/requirements.txt
 COPY shared/ ./shared/
+
+# Copy Alembic migration files to the root directory
+COPY core/observer/alembic.ini ./
+COPY core/observer/migrations/ ./migrations/
 
 # Expose port
 EXPOSE 8000
