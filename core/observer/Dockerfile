@@ -2,6 +2,12 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Update packages and fix security vulnerabilities
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 COPY core/observer/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
