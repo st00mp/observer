@@ -1,0 +1,19 @@
+# Configuration du crawler "gentle" pour crawl4ai
+cache_mode: "enable"
+wait_until: "networkidle"
+page_timeout: 60000
+delay_before_return_html: 2.0
+word_count_threshold: 200
+scan_full_page: false
+scroll_delay: 1.0
+process_iframes: false
+remove_overlay_elements: true
+magic: true
+verbose: true
+enable_rate_limiting: true
+rate_limit_config:
+  max_requests_per_minute: 3
+  max_concurrent: 1
+memory_threshold_percent: 50.0
+check_interval: 2.0
+respect_robots_txt: true
