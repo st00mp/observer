@@ -1,0 +1,6 @@
+.venv/
+core/observer/__pycache__/
+core/observer/features/__pycache__/
+core/observer/features/crawling/__pycache__/
+cryptopanic_news.json
+shared/__pycache__/
