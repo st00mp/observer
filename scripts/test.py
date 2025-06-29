@@ -7,11 +7,6 @@ from typing import Optional, List, Dict
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
-# RATE-LIMIT CONFIGURATION
-SLEEP_BETWEEN_REQUESTS = 1  # seconds between each canonical fetch
-MAX_CANONICAL_RETRIES = 3
-BACKOFF_FACTOR = 2
-
 # ─────────────────── CONFIG NAVIGATEUR (JS activé) ───────────────────
 browser_cfg = BrowserConfig(
     browser_type="chromium",
@@ -55,26 +50,6 @@ async def canonical(crawler: AsyncWebCrawler, art_id: str) -> Optional[str]:
         delay_before_return_html=1,
         extraction_strategy=JsonCssExtractionStrategy(canonical_schema)
     )
-    attempts = 0
-    delay = 1
-    while attempts < MAX_CANONICAL_RETRIES:
-        res = await crawler.arun(
-            url=f"https://cryptopanic.com/news/click/{art_id}/",
-            config=click_conf
-        )
-        if res.extracted_content:
-            try:
-                data_list = json.loads(res.extracted_content)
-                if data_list:
-                    first = data_list[0]
-                    return first.get("canonical") or first.get("og_url")
-            except json.JSONDecodeError:
-                pass
-        attempts += 1
-        print(f"    ⚠️ Échec canonical (tentative {attempts}/{MAX_CANONICAL_RETRIES}), retry dans {delay}s")
-        await asyncio.sleep(delay)
-        delay *= BACKOFF_FACTOR
-    return None
     res = await crawler.arun(
         url=f"https://cryptopanic.com/news/click/{art_id}/",
         config=click_conf
@@ -109,7 +84,6 @@ async def fetch_cryptopanic() -> List[Dict]:
 
             canon = await canonical(crawler, art_id)
             print(f"    ↪ Canonical URL: {canon or 'pas trouvé'}")
-            await asyncio.sleep(SLEEP_BETWEEN_REQUESTS)
 
             articles.append({
                 "article_id": art_id,
