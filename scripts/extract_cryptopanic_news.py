@@ -1,5 +1,7 @@
 # scripts/extract_cryptopanic_news.py
-import asyncio, json, re
+import asyncio
+import json
+import re
 from typing import Optional, List, Dict
 
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
@@ -13,15 +15,15 @@ browser_cfg = BrowserConfig(
     ignore_https_errors=True,
 )
 
-# ──────────────── SCHEMA DE LA LISTE (ajout de "freshness") ─────────────
+# ──────────────── SCHEMA DE LA LISTE ─────────────
 LIST_SCHEMA = {
     "name": "Articles",
     "baseSelector": ".app-main-pane .news-container.ps .news > .news-row.news-row-link",
     "fields": [
-        {"name": "title",        "selector": ".title-text span",  "type": "text"},
-        {"name": "internal_url", "selector": "a.click-area",      "type": "attribute", "attribute": "href"},
-        {"name": "source",       "selector": ".si-source-domain", "type": "text"},
-        {"name": "time_ago",     "selector": ".news-cell.nc-date time", "type": "text"},  # ← nouveau
+        {"name": "title",        "selector": ".title-text span",           "type": "text"},
+        {"name": "internal_url", "selector": "a.click-area",             "type": "attribute", "attribute": "href"},
+        {"name": "source",       "selector": ".si-source-domain",        "type": "text"},
+        {"name": "time_ago",     "selector": ".news-cell.nc-date time",  "type": "text"},
     ]
 }
 
@@ -33,33 +35,43 @@ LIST_CONF = CrawlerRunConfig(
 
 ID_RE = re.compile(r"/news/(\d+)/")
 
-# ─────────────── FONCTION CANONICAL (sans wait_for) ────────────────
+# ─────────────── FONCTION CANONICAL (avec JsonCssExtractionStrategy) ─────────────
 async def canonical(crawler: AsyncWebCrawler, art_id: str) -> Optional[str]:
+    # Schéma pour extraire la balise canonical ou og:url
+    canonical_schema = {
+        "name": "CanonicalUrl",
+        "baseSelector": "html",
+        "fields": [
+            {"name": "canonical", "selector": "link[rel=canonical]",   "type": "attribute", "attribute": "href"},
+            {"name": "og_url",     "selector": "meta[property='og:url']", "type": "attribute", "attribute": "content"}
+        ]
+    }
+    click_conf = CrawlerRunConfig(
+        delay_before_return_html=1,
+        extraction_strategy=JsonCssExtractionStrategy(canonical_schema)
+    )
     res = await crawler.arun(
         url=f"https://cryptopanic.com/news/click/{art_id}/",
-        config=CrawlerRunConfig(
-            delay_before_return_html=1  # juste 1s de pause, pas de timeout sur un élément caché
-        )
+        config=click_conf
     )
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(res.html, "html.parser")
-    tag = (soup.select_one("link[rel=canonical]") or
-           soup.select_one("meta[property='og:url']"))
-    if tag:
-        return tag.get("href") or tag.get("content")
+    if res.extracted_content:
+        # JsonCssExtractionStrategy renvoie une liste de dicts
+        data_list = json.loads(res.extracted_content)
+        if data_list:
+            first = data_list[0]
+            return first.get("canonical") or first.get("og_url")
     return None
 
-# ─────────────────────── PIPELINE PRINCIPAL ────────────────────────
+# ─────────────────────── PIPELINE PRINCIPAL ───────────────────────
 async def fetch_cryptopanic() -> List[Dict]:
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
-        # 1) on récupère la liste
         lst_res = await crawler.arun("https://cryptopanic.com/news/", LIST_CONF)
         raw_items = json.loads(lst_res.extracted_content)
         total = len(raw_items)
 
         articles: List[Dict] = []
         for idx, item in enumerate(raw_items, start=1):
-            title     = item["title"]
+            title    = item["title"]
             time_ago = item.get("time_ago", "")
             print(f"[{idx}/{total}] → {title} (il y a {time_ago})")
 
@@ -70,17 +82,16 @@ async def fetch_cryptopanic() -> List[Dict]:
                 continue
             art_id = m.group(1)
 
-            # 2) on va chercher l’URL canonique
             canon = await canonical(crawler, art_id)
             print(f"    ↪ Canonical URL: {canon or 'pas trouvé'}")
 
             articles.append({
                 "article_id": art_id,
-                "title":       title,
-                "source":      item.get("source", ""),
-                "time_ago":    time_ago,
-                "internal":    f"https://cryptopanic.com{href}",
-                "canonical":   canon or f"https://cryptopanic.com{href}",
+                "title":      title,
+                "source":     item.get("source", ""),
+                "time_ago":   time_ago,
+                "internal":   f"https://cryptopanic.com{href}",
+                "canonical":  canon or f"https://cryptopanic.com{href}",
             })
 
         return articles
