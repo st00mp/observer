@@ -75,17 +75,6 @@ async def canonical(crawler: AsyncWebCrawler, art_id: str) -> Optional[str]:
         await asyncio.sleep(delay)
         delay *= BACKOFF_FACTOR
     return None
-    res = await crawler.arun(
-        url=f"https://cryptopanic.com/news/click/{art_id}/",
-        config=click_conf
-    )
-    if res.extracted_content:
-        # JsonCssExtractionStrategy renvoie une liste de dicts
-        data_list = json.loads(res.extracted_content)
-        if data_list:
-            first = data_list[0]
-            return first.get("canonical") or first.get("og_url")
-    return None
 
 # ─────────────────────── PIPELINE PRINCIPAL ───────────────────────
 async def fetch_cryptopanic() -> List[Dict]:
