@@ -1,188 +1,100 @@
-import asyncio
-import json
+# scripts/extract_cryptopanic_news.py
+import asyncio, json, re
+from typing import Optional, List, Dict
+
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
-base_browser = BrowserConfig(
+# ─────────────────── CONFIG NAVIGATEUR (JS activé) ───────────────────
+browser_cfg = BrowserConfig(
     browser_type="chromium",
     headless=True,
-    viewport_width=1280,
-    viewport_height=800,
-    user_agent_mode="random",
-    verbose=True,
+    verbose=False,
     ignore_https_errors=True,
-    use_persistent_context=False,
-    text_mode=True,
-    light_mode=True,
 )
 
-async def extract_cryptopanic_titles_links():
-    # Définir le schéma d'extraction
-    schema = {
-        "name": "CryptopanicArticles",
-        "baseSelector": ".news-row.news-row-link",
-        "fields": [
-            {"name": "title", "selector": ".news-cell.nc-title .title-text span", "type": "text"},
-            # Extraction du lien interne (conservé pour référence)
-            {"name": "internal_url", "selector": "a.click-area", "type": "attribute", "attribute": "href"},
-            # Extraction du lien externe
-            {"name": "url", "selector": ".si-source-name", "type": "attribute", "attribute": "data-href"},
-            # Si le sélecteur ci-dessus ne fonctionne pas, essayez celui-ci à la place :
-            # {"name": "url", "selector": ".si-source-name a", "type": "attribute", "attribute": "href"},
-            {"name": "source", "selector": ".si-source-domain", "type": "text"}
-        ]
-    }   
-    
-    # Configurer le crawler avec la stratégie d'extraction
-    config = CrawlerRunConfig(
-        target_elements=[".app-main-pane .news-container.ps .news > .news-row.news-row-link"],  # Focus sur ces éléments
-        wait_for=".app-main-pane .news-container.ps .news > .news-row.news-row-link",  # Attendre que ces éléments apparaissent
-        extraction_strategy=JsonCssExtractionStrategy(schema),  # Stratégie d'extraction
-        js_code="""
-        // Fonction pour charger progressivement plus d'articles puis extraire les liens externes
-        async function processPage(minCount = 20) {
-            // 1. Charger plus d'articles par défilement
-            const getCount = () => document.querySelectorAll('.app-main-pane .news-container.ps .news > .news-row.news-row-link').length;
-            let initialCount = getCount();
-            let currentCount = initialCount;
-            
-            console.log(`Début: ${initialCount} articles déjà chargés`);
-            
-            // Essayer jusqu'à 3 fois de charger plus d'articles
-            for (let i = 0; i < 3; i++) {
-                // Défiler jusqu'en bas
-                window.scrollTo(0, document.body.scrollHeight);
-                
-                // Attendre que de nouveaux éléments se chargent
-                await new Promise(r => setTimeout(r, 2000));
-                
-                // Vérifier si de nouveaux articles ont été chargés
-                let newCount = getCount();
-                if (newCount > currentCount) {
-                    currentCount = newCount;
-                    console.log(`${currentCount} articles chargés`);
-                } else {
-                    // Aucun nouvel article chargé, on arrête
-                    console.log("Pas de nouveaux articles chargés, fin du chargement");
-                    break;
-                }
-                
-                // Si on a assez d'articles, on arrête
-                if (currentCount >= minCount) {
-                    console.log(`Objectif atteint: ${currentCount} articles chargés`);
-                    break;
-                }
-            }
-            
-            // 2. Extraire les liens externes en simulant des clics
-            const articles = [];
-            const rows = document.querySelectorAll('.app-main-pane .news-container.ps .news > .news-row.news-row-link');
-            
-            console.log(`Extraction des liens externes pour ${rows.length} articles...`);
-            
-            // Pour chaque article...
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                
-                // Extraire le titre
-                const titleElement = row.querySelector('.news-cell.nc-title .title-text span');
-                const title = titleElement ? titleElement.textContent.trim() : '';
-                
-                // Extraire la source
-                const sourceElement = row.querySelector('.si-source-domain');
-                const source = sourceElement ? sourceElement.textContent.trim() : '';
-                
-                // Extraire le lien cryptopanic (fallback)
-                const internalLink = row.querySelector('a.click-area');
-                const internalUrl = internalLink ? internalLink.getAttribute('href') : '';
-                
-                // Trouver l'icône de lien externe
-                const linkIcon = row.querySelector('.open-link-icon.icon.icon-link');
-                let externalUrl = '';
-                
-                // Si on trouve l'icône de lien externe, simuler un clic dessus et capturer la redirection
-                if (linkIcon) {
-                    try {
-                        // Créer un capteur pour window.open
-                        const oldOpenMethod = window.open;
-                        let capturedUrl = null;
-                        
-                        // Remplacer temporairement window.open pour capturer l'URL
-                        window.open = function(url) {
-                            capturedUrl = url;
-                            return { focus: () => {} }; // Stub pour éviter les erreurs
-                        };
-                        
-                        // Simuler le clic sur l'icône
-                        linkIcon.click();
-                        
-                        // Attendre un peu que le clic soit traité
-                        await new Promise(r => setTimeout(r, 100));
-                        
-                        // Récupérer l'URL capturée
-                        if (capturedUrl) {
-                            externalUrl = capturedUrl;
-                        }
-                        
-                        // Restaurer la méthode originale
-                        window.open = oldOpenMethod;
-                    } catch (e) {
-                        console.error("Erreur lors du clic sur le lien externe:", e);
-                    }
-                }
-                
-                // Ajouter l'article si on a un titre
-                if (title) {
-                    articles.push({
-                        title: title,
-                        url: externalUrl || ("https://cryptopanic.com" + internalUrl), // URL externe ou interne complète
-                        internal_url: internalUrl,
-                        source: source
-                    });
-                }
-            }
-            
-            console.log(`Extraction terminée: ${articles.length} articles avec leurs liens.`);
-            return articles;
-        }
-        
-        // Exécuter notre fonction et renvoyer les résultats
-        return processPage(30);
-        """
-    )
-    
-    # Exécuter le crawler
-    async with AsyncWebCrawler(config=base_browser) as crawler:
-        result = await crawler.arun(
-            url="https://cryptopanic.com/news",
-            config=config
-        )
-        
-        # Extraire les résultats au format JSON
-        if result.extracted_content:
-            articles = json.loads(result.extracted_content)
-            
-            # Traiter les URLs relatives
-            for article in articles:
-                if article.get('url') and article['url'].startswith('/'):
-                    article['url'] = f"https://cryptopanic.com{article['url']}"
-            
-            return articles
-        else:
-            print("Aucun contenu extrait")
-            return []
+# ──────────────── SCHEMA DE LA LISTE (ajout de "freshness") ─────────────
+LIST_SCHEMA = {
+    "name": "Articles",
+    "baseSelector": ".app-main-pane .news-container.ps .news > .news-row.news-row-link",
+    "fields": [
+        {"name": "title",        "selector": ".title-text span",  "type": "text"},
+        {"name": "internal_url", "selector": "a.click-area",      "type": "attribute", "attribute": "href"},
+        {"name": "source",       "selector": ".si-source-domain", "type": "text"},
+        {"name": "time_ago",     "selector": ".news-cell.nc-date time", "type": "text"},  # ← nouveau
+    ]
+}
 
+LIST_CONF = CrawlerRunConfig(
+    wait_for="css:.app-main-pane .news-container.ps .news > .news-row.news-row-link",
+    target_elements=[".app-main-pane .news-container.ps .news > .news-row.news-row-link"],
+    extraction_strategy=JsonCssExtractionStrategy(LIST_SCHEMA)
+)
+
+ID_RE = re.compile(r"/news/(\d+)/")
+
+# ─────────────── FONCTION CANONICAL (sans wait_for) ────────────────
+async def canonical(crawler: AsyncWebCrawler, art_id: str) -> Optional[str]:
+    res = await crawler.arun(
+        url=f"https://cryptopanic.com/news/click/{art_id}/",
+        config=CrawlerRunConfig(
+            delay_before_return_html=1  # juste 1s de pause, pas de timeout sur un élément caché
+        )
+    )
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(res.html, "html.parser")
+    tag = (soup.select_one("link[rel=canonical]") or
+           soup.select_one("meta[property='og:url']"))
+    if tag:
+        return tag.get("href") or tag.get("content")
+    return None
+
+# ─────────────────────── PIPELINE PRINCIPAL ────────────────────────
+async def fetch_cryptopanic() -> List[Dict]:
+    async with AsyncWebCrawler(config=browser_cfg) as crawler:
+        # 1) on récupère la liste
+        lst_res = await crawler.arun("https://cryptopanic.com/news/", LIST_CONF)
+        raw_items = json.loads(lst_res.extracted_content)
+        total = len(raw_items)
+
+        articles: List[Dict] = []
+        for idx, item in enumerate(raw_items, start=1):
+            title     = item["title"]
+            time_ago = item.get("time_ago", "")
+            print(f"[{idx}/{total}] → {title} (il y a {time_ago})")
+
+            href = item.get("internal_url", "")
+            m = ID_RE.search(href)
+            if not m:
+                print("    ⚠️ pas d’ID trouvé, on skip")
+                continue
+            art_id = m.group(1)
+
+            # 2) on va chercher l’URL canonique
+            canon = await canonical(crawler, art_id)
+            print(f"    ↪ Canonical URL: {canon or 'pas trouvé'}")
+
+            articles.append({
+                "article_id": art_id,
+                "title":       title,
+                "source":      item.get("source", ""),
+                "time_ago":    time_ago,
+                "internal":    f"https://cryptopanic.com{href}",
+                "canonical":   canon or f"https://cryptopanic.com{href}",
+            })
+
+        return articles
+
+# ────────────────────────────────────────────────────────────────────
 async def main():
-    articles = await extract_cryptopanic_titles_links()
-    
-    # Afficher le résultat
-    for i, article in enumerate(articles):
-        print(f"{i+1}. {article.get('title')}")
-        print(f"   URL: {article.get('url')}")
-        print(f"   Source: {article.get('source') or 'N/A'}")
-        print("---")
-    print(f"Total: {len(articles)} articles trouvés")
+    arts = await fetch_cryptopanic()
+    print("\n=== Résultat final ===\n")
+    for idx, a in enumerate(arts, 1):
+        print(f"{idx:02d}. {a['title']}")
+        print(f"    Source    : {a['source']}")
+        print(f"    Âge       : {a['time_ago']}")
+        print(f"    URL       : {a['canonical']}\n")
+    print(f"Total: {len(arts)} articles")
 
 if __name__ == "__main__":
     asyncio.run(main())
-
