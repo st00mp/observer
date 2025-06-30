@@ -9,21 +9,21 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-COPY core/observer/requirements.txt .
+COPY core/syntinel/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
-COPY core/observer/app.py ./core/observer/app.py
-COPY core/observer/features/ ./core/observer/features/
-COPY core/observer/requirements.txt ./core/observer/requirements.txt
+COPY core/syntinel/app.py ./core/syntinel/app.py
+COPY core/syntinel/modules/ ./core/syntinel/modules/
+COPY core/syntinel/requirements.txt ./core/syntinel/requirements.txt
 COPY shared/ ./shared/
 
 # Copy Alembic migration files to the root directory
-COPY core/observer/alembic.ini ./
-COPY core/observer/migrations/ ./migrations/
+COPY core/syntinel/alembic.ini ./
+COPY core/syntinel/migrations/ ./migrations/
 
 # Expose port
 EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "core.observer.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "core.syntinel.app:app", "--host", "0.0.0.0", "--port", "8000"]

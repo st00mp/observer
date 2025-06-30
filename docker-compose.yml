@@ -2,13 +2,13 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:14-alpine
-    container_name: observer-postgres
+    container_name: syntinel-postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: pswd
-      POSTGRES_DB: observerdb
+      POSTGRES_DB: syntineldb
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data/syntinel
     ports:
       - "5432:5432"
     healthcheck:
@@ -21,7 +21,7 @@ services:
   # Redis Cache
   redis:
     image: redis:alpine
-    container_name: observer-redis
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
@@ -35,9 +35,9 @@ services:
     restart: unless-stopped
 
   # Crawl4AI Service
-  crawl4ai:
+  syntinel-crawl4ai:
     image: unclecode/crawl4ai:latest
-    container_name: observer-crawl4ai
+    container_name: syntinel-crawl4ai
     ports:
       - "8001:11235"
     environment:
@@ -48,26 +48,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Observer Core - Central Service
-  observer-core:
+  # Syntinel Core - Central Service
+  syntinel-core:
     build:
       context: .
-      dockerfile: ./core/observer/Dockerfile
-    container_name: observer-core
+      dockerfile: ./core/syntinel/Dockerfile
+    container_name: syntinel-core
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://admin:pswd@postgres:5432/observerdb
+      - DATABASE_URL=postgresql://admin:pswd@syntinel-postgres:5432/syntineldb
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - CRAWL4AI_URL=http://crawl4ai:8000
-      - WRITER_AGENT_URL=http://writer-agent:8000
+      - CRAWL4AI_URL=http://syntinel-crawl4ai:8000
+      - WRITER_AGENT_URL=http://syntinel-writer-agent:8000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      crawl4ai:
+      syntinel-crawl4ai:
         condition: service_started
       writer-agent:
         condition: service_started
@@ -77,7 +77,7 @@ services:
   writer-agent:
     build:
       context: ./services/writer-agent
-    container_name: observer-writer-agent
+    container_name: syntinel-writer-agent
     ports:
       - "8002:8000"
     environment:
@@ -91,25 +91,25 @@ services:
   telegram-bot:
     build:
       context: ./services/telegram-bot
-    container_name: observer-telegram-bot
+    container_name: syntinel-telegram-bot
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - OBSERVER_CORE_URL=http://observer-core:8000
+      - OBSERVER_CORE_URL=http://syntinel-core:8000
       - POSTGRES_HOST=postgres
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=pswd
-      - POSTGRES_DB=observerdb
+      - POSTGRES_DB=syntineldb
     depends_on:
-      - observer-core
+      - syntinel-core
       - postgres
     restart: unless-stopped
     
   # pgAdmin for Database Management
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: observer-pgadmin
+    container_name: syntinel-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@observer.com
+      PGADMIN_DEFAULT_EMAIL: admin@syntinel.com
       PGADMIN_DEFAULT_PASSWORD: pswd
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:

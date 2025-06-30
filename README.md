@@ -1,4 +1,4 @@
-# 🚀 **Observer Project**
+# 🚀 **Syntinel Project**
 
 **Un système modulaire de microservices pour scruter l’actualité crypto, filtrer, scorer, générer et publier du contenu différencié automatiquement, tout en gardant un contrôle humain final.**
 
@@ -6,7 +6,7 @@
 
 ## 🗂️ **Architecture**
 
-Ce projet repose sur une **architecture orientée microservices**, orchestrée par un cœur central (`core/observer`) et enrichie de services spécialisés (`services/`).
+Ce projet repose sur une **architecture orientée microservices**, orchestrée par un cœur central (`core/syntinel`) et enrichie de services spécialisés (`services/`).
 Chaque brique est isolée selon le principe **Feature-Sliced Design (FSD)** pour une organisation claire et évolutive.
 
 ---
@@ -14,14 +14,14 @@ Chaque brique est isolée selon le principe **Feature-Sliced Design (FSD)** pour
 ### 📌 **Structure du projet**
 
 ```
-observer/
+syntinel/
 ├── core/                     # Orchestrateur central
-│   └── observer/
-│       ├── features/         # Modules métiers (FSD)
+│   └── syntinel/
+│       ├── modules/          # Modules métiers (FSD)
 │       │   ├── crawling/     # Extraction et mise en cache des titres crypto
 │       │   ├── scoring/      # Attribution de scores de pertinence
 │       │   └── publishing/   # Orchestration de la publication
-│       └── Dockerfile        # Build du service observer-core
+│       └── Dockerfile        # Build du service syntinel-core
 ├── services/                 # Microservices spécialisés
 │   ├── writer-agent/         # Génération de posts via CrewAI
 │   └── telegram-bot/         # Interface Telegram pour interaction utilisateur
@@ -37,7 +37,7 @@ observer/
 
 | Composant         | Rôle                                                                    |
 | ----------------- | ----------------------------------------------------------------------- |
-| **Observer-Core** | Orchestrateur principal : collecte, scoring, coordination des workflows |
+| **Syntinel-Core** | Orchestrateur principal : collecte, scoring, coordination des workflows |
 | **Crawl4AI**      | (Optionnel) Service dédié d’extraction rapide multi-sources             |
 | **Writer-Agent**  | Générateur de contenus stylisés via **CrewAI** (ex. ton sarcastique)    |
 | **Telegram-Bot**  | Interface conviviale pour valider, éditer et publier                    |
@@ -100,18 +100,18 @@ docker-compose ps
 
 | Service               | URL                                                                                    |
 | --------------------- | -------------------------------------------------------------------------------------- |
-| **Observer-Core API** | [http://localhost:8000](http://localhost:8000)                                         |
+| **Syntinel-Core API** | [http://localhost:8000](http://localhost:8000)                                         |
 | **Writer-Agent API**  | [http://localhost:8002](http://localhost:8002)                                         |
 | **Telegram-Bot**      | Via votre App Telegram                                                                 |
-| **pgAdmin**           | [http://localhost:5050](http://localhost:5050) (login: `admin@observer.com` / `admin`) |
-| **PostgreSQL**        | `localhost:5432` (par défaut : `observer / observer_password`)                         |
+| **pgAdmin**           | [http://localhost:5050](http://localhost:5050) (login: `admin@syntinel.com` / `admin`) |
+| **PostgreSQL**        | `localhost:5432` (par défaut : `admin / pswd`)                         |
 | **Redis**             | `localhost:6379`                                                                       |
 
 ---
 
-## 👨‍💻 **Développement**
+## **Développement**
 
-* **Core** : Gère la logique métier et l’orchestration globale.
+* **Syntinel-Core** : Gère la logique métier et l'orchestration globale.
 * **Services** : Gèrent des tâches spécialisées via APIs isolées.
 * **Shared** : Fournit des modèles et outils communs pour assurer la cohérence entre modules.
 
@@ -121,7 +121,7 @@ Le design **FSD** garantit une isolation forte par fonctionnalité, facilitant l
 
 ## ✅ **Bonnes pratiques**
 
-✔️ **Feature Sliced Design** pour chaque `features/` :
+✔️ **Feature Sliced Design** pour chaque `modules/` :
 
 * `api.py` : Routes API (ex. FastAPI)
 * `service.py` : Logique pure Python, testable sans serveur

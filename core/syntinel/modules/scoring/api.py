@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from shared.db import get_db, Article
 from shared.models import ScoredArticle
-from core.observer.features.scoring.service import score_articles_batch
+from core.syntinel.modules.scoring.service import score_articles_batch
 
 router = APIRouter(prefix="/score", tags=["scoring"])
 

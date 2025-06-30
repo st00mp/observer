@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from datetime import datetime
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:pswd@postgres:5432/observerdb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:pswd@postgres:5432/syntineldb")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

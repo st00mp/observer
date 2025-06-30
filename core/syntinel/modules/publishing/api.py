@@ -5,7 +5,7 @@ from datetime import datetime
 
 from shared.db import get_db, Draft, Article
 from shared.models import GenerateDraftRequest, DraftResponse, ScheduleRequest
-from core.observer.features.publishing.service import generate_content, publish_draft_to_platforms
+from core.syntinel.modules.publishing.service import generate_content, publish_draft_to_platforms
 
 router = APIRouter(prefix="/publishing", tags=["publishing"])
 

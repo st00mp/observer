@@ -6,15 +6,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routers
-from core.observer.features.crawling.api import router as crawling_router
-from core.observer.features.scoring.api import router as scoring_router
-from core.observer.features.publishing.api import router as publishing_router
+from core.syntinel.modules.crawling.api import router as crawling_router
+from core.syntinel.modules.scoring.api import router as scoring_router
+from core.syntinel.modules.publishing.api import router as publishing_router
 
 # Import database setup
 from shared.db import create_tables
 
 # Create FastAPI app
-app = FastAPI(title="Observer Core")
+app = FastAPI(title="Syntinel Core")
 
 # Register routers
 app.include_router(crawling_router)
@@ -29,4 +29,4 @@ def startup_event():
 # Root endpoint
 @app.get("/")
 def read_root():
-    return {"status": "online", "service": "Observer Core"}
+    return {"status": "online", "service": "Syntinel Core"}

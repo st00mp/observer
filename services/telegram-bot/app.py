@@ -33,16 +33,16 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise ValueError("No Telegram bot token provided")
 
-# Observer Core API URL
-OBSERVER_CORE_URL = os.getenv("OBSERVER_CORE_URL", "http://observer-core:8000")
+# Syntinel Core API URL
+OBSERVER_CORE_URL = os.getenv("OBSERVER_CORE_URL", "http://syntinel-core:8000")
 
 # Database setup
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    f"postgresql://{os.getenv('POSTGRES_USER', 'observer')}:"
-    f"{os.getenv('POSTGRES_PASSWORD', 'observer_password')}@"
+    f"postgresql://{os.getenv('POSTGRES_USER', 'admin')}:"
+    f"{os.getenv('POSTGRES_PASSWORD', 'pswd')}@"
     f"{os.getenv('POSTGRES_HOST', 'postgres')}:5432/"
-    f"{os.getenv('POSTGRES_DB', 'observer')}"
+    f"{os.getenv('POSTGRES_DB', 'syntineldb')}"
 )
 
 engine = create_engine(DATABASE_URL)
@@ -85,7 +85,7 @@ def log_action(user_id, action, draft_id=None, details=None):
         db.close()
 
 async def fetch_drafts():
-    """Fetch drafts from Observer Core"""
+    """Fetch drafts from Syntinel Core"""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{OBSERVER_CORE_URL}/drafts")
@@ -99,7 +99,7 @@ async def fetch_drafts():
         return []
 
 async def publish_draft(draft_id):
-    """Publish draft to X via Observer Core"""
+    """Publish draft to X via Syntinel Core"""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(f"{OBSERVER_CORE_URL}/publish/{draft_id}")
@@ -140,13 +140,13 @@ async def start(update: Update, context: CallbackContext):
     log_action(user.id, "start")
 
 async def show_drafts(update: Update, context: CallbackContext):
-    """Show available drafts from Observer Core."""
+    """Show available drafts from Syntinel Core."""
     user = update.effective_user
     
     # Show "loading" message
     message = await update.message.reply_text("Fetching latest drafts...")
     
-    # Get drafts from Observer Core
+    # Fetch drafts from Syntinel Core API
     drafts = await fetch_drafts()
     
     if not drafts:

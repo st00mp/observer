@@ -4,7 +4,7 @@ import httpx
 
 from shared.db import get_db, Article
 from shared.models import CrawlRequest
-from core.observer.features.crawling.service import get_cached_article, fetch_article_from_crawl4ai, cache_article
+from core.syntinel.modules.crawling.service import get_cached_article, fetch_article_from_crawl4ai, cache_article
 
 router = APIRouter(prefix="/crawl", tags=["crawling"])
 
