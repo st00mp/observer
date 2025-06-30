@@ -4,7 +4,7 @@
 
 ---
 
-## 🗂️ **Architecture**
+## 📂️ **Architecture**
 
 Ce projet repose sur une **architecture orientée microservices**, orchestrée par un cœur central (`core/syntinel`) et enrichie de services spécialisés (`services/`).
 Chaque brique est isolée selon le principe **Feature-Sliced Design (FSD)** pour une organisation claire et évolutive.
@@ -17,8 +17,13 @@ Chaque brique est isolée selon le principe **Feature-Sliced Design (FSD)** pour
 syntinel/
 ├── core/                     # Orchestrateur central
 │   └── syntinel/
+│       ├── orchestrator.py   # Point d'entrée pour exécuter les pipelines métiers
 │       ├── modules/          # Modules métiers (FSD)
-│       │   ├── ingestion/   # Extraction et mise en cache des titres crypto
+│       │   ├── ingestion/    # Extraction, dédoublonnage, normalisation, Redis
+│       │   │   ├── ingestion_pipeline.py
+│       │   │   └── collector/
+│       │   │       ├── base.py
+│       │   │       └── CryptoPanicCollector.py
 │       │   ├── scoring/      # Attribution de scores de pertinence
 │       │   └── publishing/   # Orchestration de la publication
 │       └── Dockerfile        # Build du service syntinel-core
@@ -38,23 +43,30 @@ syntinel/
 | Composant         | Rôle                                                                    |
 | ----------------- | ----------------------------------------------------------------------- |
 | **Syntinel-Core** | Orchestrateur principal : collecte, scoring, coordination des workflows |
-| **Crawl4AI**      | (Optionnel) Service dédié d’extraction rapide multi-sources             |
+| **Crawl4AI**      | (Optionnel) Service d'extraction multi-sources en HTTP                  |
 | **Writer-Agent**  | Générateur de contenus stylisés via **CrewAI** (ex. ton sarcastique)    |
 | **Telegram-Bot**  | Interface conviviale pour valider, éditer et publier                    |
 | **PostgreSQL**    | Base de données centrale pour titres, scores, logs                      |
-| **Redis**         | Cache et queue pour accélérer le crawl et la notation                   |
+| **Redis**         | Cache + queue (via Redis Streams) pour ingestion et scoring             |
 | **pgAdmin**       | Interface web pour administrer PostgreSQL                               |
 
 ---
 
 ## 📌 **Flux Fonctionnel**
 
-1️⃣ **Crawler** : Explore plusieurs sites crypto, extrait uniquement les titres.
-2️⃣ **Scoring** : Évalue chaque titre selon pertinence et popularité pour prioriser les news chaudes.
-3️⃣ **Bot Telegram** : Propose à l’utilisateur une sélection triée (ex. Top 3).
-4️⃣ **Writer-Agent (CrewAI)** : Génère une version du titre au ton sarcastique/mème-friendly.
-5️⃣ **Validation utilisateur** : Via Telegram, le créateur peut modifier ou demander une autre version.
-6️⃣ **Publication** : Après validation, le tweet est publié automatiquement via l’API X.
+1. **Scheduler/Orchestrator** : déclenche périodiquement le pipeline d'ingestion
+2. **Collectors** : récupèrent les titres d'actu via API tierces (Cryptopanic, etc.)
+3. **Pipeline ingestion** :
+
+   * Dédoublonne via DB
+   * Normalise les articles (nettoyage, format)
+   * Insère en base si nouveauté
+   * Pousse un événement dans un stream Redis
+4. **Scoring Worker** : consomme le stream Redis pour scorer les nouveaux articles
+5. **Bot Telegram** : affiche les meilleurs titres à l'utilisateur
+6. **Writer-Agent** : génère un contenu original
+7. **Validation utilisateur** : choix du ton, édition ou validation finale
+8. **Publication automatique** : vers l'API X (Twitter)
 
 ---
 
@@ -77,21 +89,18 @@ cp .env.example .env
 
 **Dans `.env`, renseigner :**
 
-* `OPENAI_API_KEY` — Votre clé API OpenAI
-* `TELEGRAM_BOT_TOKEN` — Token de votre Bot Telegram
-* `POSTGRES_USER`, `POSTGRES_PASSWORD` — Credentials DB si custom
-* `X_API_KEY` (optionnel) — Pour l’intégration Twitter
+* `OPENAI_API_KEY`
+* `TELEGRAM_BOT_TOKEN`
+* `POSTGRES_USER`, `POSTGRES_PASSWORD`
+* `X_API_KEY` (optionnel)
 
 ---
 
 ## 🚀 **Démarrage**
 
 ```bash
-# Construire et lancer tous les conteneurs en arrière-plan
+# Construire et lancer tous les conteneurs
 docker-compose up -d
-
-# Vérifier l’état des services
-docker-compose ps
 ```
 
 ---
@@ -104,42 +113,40 @@ docker-compose ps
 | **Writer-Agent API**  | [http://localhost:8002](http://localhost:8002)                                         |
 | **Telegram-Bot**      | Via votre App Telegram                                                                 |
 | **pgAdmin**           | [http://localhost:5050](http://localhost:5050) (login: `admin@syntinel.com` / `admin`) |
-| **PostgreSQL**        | `localhost:5432` (par défaut : `admin / pswd`)                         |
+| **PostgreSQL**        | `localhost:5432` (par défaut : `admin / pswd`)                                         |
 | **Redis**             | `localhost:6379`                                                                       |
 
 ---
 
 ## **Développement**
 
-* **Syntinel-Core** : Gère la logique métier et l'orchestration globale.
-* **Services** : Gèrent des tâches spécialisées via APIs isolées.
-* **Shared** : Fournit des modèles et outils communs pour assurer la cohérence entre modules.
-
-Le design **FSD** garantit une isolation forte par fonctionnalité, facilitant le test unitaire, l’évolution incrémentale et le déploiement CI/CD.
+* **Syntinel-Core** : orchestrateur + pipelines + ingestion workers
+* **Services** : APIs spécialisées, isolables
+* **Shared** : Modèles Pydantic / outils communs
 
 ---
 
 ## ✅ **Bonnes pratiques**
 
-✔️ **Feature Sliced Design** pour chaque `modules/` :
-
-* `api.py` : Routes API (ex. FastAPI)
-* `service.py` : Logique pure Python, testable sans serveur
-
-✔️ **Queue ou cache Redis** pour fiabiliser crawl et scoring.
-
-✔️ **CrewAI paramétrable** pour personnaliser le ton du contenu (sérieux, sarcastique, troll).
-
-✔️ **Logs Telegram** pour tracer les interactions et valider l’engagement.
+* ✅ Feature Sliced Design : `api.py`, `service.py`, `pipeline.py`, `collector/`
+* ✅ Interface commune `BaseCollector` pour déclencher `fetch()` sur tous les modules
+* ✅ Déduplication en amont + `ON CONFLICT DO UPDATE` en fallback
+* ✅ Streams Redis pour ingestion asynchrone
+* ✅ Wrapper `run_collector_safely()` avec logs + retry automatique
+* ✅ Validation des entrées via `pydantic`
+* ✅ Tests automatisés via `docker-compose.tests.yml`
+* ✅ Orchestration unique via `orchestrator.py`
 
 ---
 
 ## ✨ **Roadmap**
 
-✅ MVP avec crawl + scoring + rewriting + validation
-🚀 Ajout d’autres sources (Reddit, CoinGecko)
-🚀 Mode « planification » pour poster à heure fixe
-🚀 Dashboard web pour historique et métriques
+✅ MVP ingestion → scoring → rewriting → publication
+✅ Support Redis Streams
+✅ Orchestrateur unique : `orchestrator.py`
+🚀 Ajout de `metrics Prometheus`
+🚀 Extension multi-sources : Reddit, CoinGecko
+🚀 CI automatisée avec tests intégrés
 
 ---
 

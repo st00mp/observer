@@ -7,7 +7,11 @@ from typing import Optional, List, Dict
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
-# @todo: Créer logique métier pour ne pas récupérer les articles déjà en base. Utiliser outil déja prévu par crawl4ai.  
+# @todo: 
+# Créer logique métier pour ne pas récupérer les articles déjà en base. Utiliser outil déja prévu par crawl4ai.
+# Ajouter une étape pour récupérer le résumé de l'article sur CryptoPanic 
+
+
 
 # RATE-LIMIT CONFIGURATION
 SLEEP_BETWEEN_REQUESTS = 1  # seconds between each canonical fetch
