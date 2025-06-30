@@ -18,7 +18,7 @@ syntinel/
 ├── core/                     # Orchestrateur central
 │   └── syntinel/
 │       ├── modules/          # Modules métiers (FSD)
-│       │   ├── crawling/     # Extraction et mise en cache des titres crypto
+│       │   ├── ingestion/   # Extraction et mise en cache des titres crypto
 │       │   ├── scoring/      # Attribution de scores de pertinence
 │       │   └── publishing/   # Orchestration de la publication
 │       └── Dockerfile        # Build du service syntinel-core

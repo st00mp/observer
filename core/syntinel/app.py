@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routers
-from core.syntinel.modules.crawling.api import router as crawling_router
+from core.syntinel.modules.ingestion.api import router as ingestion_router
 from core.syntinel.modules.scoring.api import router as scoring_router
 from core.syntinel.modules.publishing.api import router as publishing_router
 
@@ -17,7 +17,7 @@ from shared.db import create_tables
 app = FastAPI(title="Syntinel Core")
 
 # Register routers
-app.include_router(crawling_router)
+app.include_router(ingestion_router)
 app.include_router(scoring_router)
 app.include_router(publishing_router)
 

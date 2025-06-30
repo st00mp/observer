@@ -64,7 +64,7 @@ async def fetch_article_from_crawl4ai(url: str, source: str) -> Dict[str, Any]:
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{CRAWL4AI_URL}/crawl",
+            f"{CRAWL4AI_URL}/ingest",
             json={"url": url, "mode": "article"}
         )
         
