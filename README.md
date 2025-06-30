@@ -1,6 +1,6 @@
 # 🚀 **Syntinel Project**
 
-**Un système modulaire de microservices pour scruter l’actualité crypto, filtrer, scorer, générer et publier du contenu différencié automatiquement, tout en gardant un contrôle humain final.**
+**Un système modulaire de microservices pour scruter l’actualité, filtrer, scorer, générer et publier du contenu différencié automatiquement, tout en gardant un contrôle humain final.**
 
 ---
 
