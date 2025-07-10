@@ -144,10 +144,12 @@ docker-compose up -d
 
 This project is a work in progress. Current state:
 
+```
 •	✅ Ingestion pipeline: functional (collector, normalization, deduplication, storage)
 •	🔄 Scoring module: in progress
 •	🚧 Writer-Agent + Telegram interface: not yet implemented
 •	🚧 Publishing module: not yet implemented
+```
 
 I welcome contributions and suggestions — feel free to fork, clone, or reach out.
 
