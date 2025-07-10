@@ -140,16 +140,7 @@ docker-compose up -d
 
 ---
 
-## ✨ Roadmap
-	•	✅ MVP: ingestion → scoring → rewriting → publishing
-	•	✅ Redis Streams support
-	•	✅ Unified orchestrator: orchestrator.py
-	•	🚀 Prometheus metrics integration
-	•	🚀 Multi-source support: Reddit, CoinGecko
-
----
-
-📌 Project Status
+## 📌 Project Status
 
 This project is a work in progress. Current state:
 
@@ -157,6 +148,7 @@ This project is a work in progress. Current state:
 •	🔄 Scoring module: in progress
 •	🚧 Writer-Agent + Telegram interface: not yet implemented
 •	🚧 Publishing module: not yet implemented
+
 I welcome contributions and suggestions — feel free to fork, clone, or reach out.
 
 ---
