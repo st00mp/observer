@@ -2,6 +2,8 @@
 
 **A modular microservices system for monitoring news, filtering, scoring, generating and publishing differentiated content — while keeping a final human-in-the-loop.**
 
+> Note: This project is currently in progress. Only the ingestion pipeline is functional at this stage. See the Project Status section for details.
+
 ---
 
 ## 📂️ Architecture
@@ -144,6 +146,18 @@ docker-compose up -d
 	•	✅ Unified orchestrator: orchestrator.py
 	•	🚀 Prometheus metrics integration
 	•	🚀 Multi-source support: Reddit, CoinGecko
+
+---
+
+📌 Project Status
+
+This project is a work in progress. Current state:
+
+•	✅ Ingestion pipeline: functional (collector, normalization, deduplication, storage)
+•	🔄 Scoring module: in progress
+•	🚧 Writer-Agent + Telegram interface: not yet implemented
+•	🚧 Publishing module: not yet implemented
+I welcome contributions and suggestions — feel free to fork, clone, or reach out.
 
 ---
 
