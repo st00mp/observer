@@ -14,6 +14,7 @@ Each component follows the **Feature-Sliced Design (FSD)** principle for clarity
 
 ## 📌 Project Structure
 
+```
 syntinel/
 ├── core/                     # Central orchestrator
 │   └── syntinel/
@@ -34,6 +35,7 @@ syntinel/
 │   └── models/               # Common Pydantic models
 ├── docker-compose.yml        # Container orchestration
 └── .env.example              # Example environment variables
+```
 
 ---
 
@@ -91,7 +93,7 @@ Fill in the .env file with:
 	•	POSTGRES_USER, POSTGRES_PASSWORD
 	•	X_API_KEY (optional)
 
-⸻
+---
 
 ## 🚀 Startup
 
@@ -101,7 +103,7 @@ docker-compose up -d
 ```
 
 
-⸻
+---
 
 ## 🔗 Service Access
 
@@ -115,14 +117,14 @@ docker-compose up -d
 | Redis             | localhost:6379                                            |
 
 
-⸻
+---
 
 ## 🛠 Development
 	•	Syntinel-Core: orchestrator, pipelines, ingestion workers
 	•	Services: isolated, pluggable APIs
 	•	Shared: Pydantic models and common utilities
 
-⸻
+---
 
 ## ✅ Best Practices
 	•	✅ Feature-Sliced Design: api.py, service.py, pipeline.py, collector/
@@ -134,7 +136,7 @@ docker-compose up -d
 	•	✅ Automated tests with docker-compose.tests.yml
 	•	✅ Centralized orchestration via orchestrator.py
 
-⸻
+---
 
 ## ✨ Roadmap
 	•	✅ MVP: ingestion → scoring → rewriting → publishing
@@ -143,7 +145,7 @@ docker-compose up -d
 	•	🚀 Prometheus metrics integration
 	•	🚀 Multi-source support: Reddit, CoinGecko
 
-⸻
+---
 
 ## 🏷️ License
 
