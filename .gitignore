@@ -8,3 +8,6 @@ shared/__pycache__/
 # Fichiers compilés Python
 __pycache__/
 *.py[cod]
+
+# Cookies
+cookies.txt
