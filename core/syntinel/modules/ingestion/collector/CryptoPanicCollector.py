@@ -7,8 +7,6 @@ from urllib.parse import urljoin
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
-# @todo:
-# - Créer logique métier pour ne pas récupérer les articles déjà en base.
 
 # RATE-LIMIT CONFIGURATION
 SLEEP_BETWEEN_REQUESTS = 1  # seconds between each request
@@ -119,7 +117,9 @@ async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
 
         # ───────────── ÉTAPE 1 : Récupération et parsing de la liste d'articles ─────────────
+        # Exécute un crawl sur la page principale des actualités
         lst_res = await crawler.arun(f"{BASE_URL}/news/", LIST_CONF)
+        # Décode la réponse JSON extraite par le crawler en une liste de dictionnaires (chaque élément = un article brut)
         raw_items = json.loads(lst_res.extracted_content)
         if limit:
             raw_items = raw_items[:limit]
@@ -158,21 +158,32 @@ async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str
             print(f"    ↪ Canonical URL: {canon or 'pas trouvé'}")
 
             # ───────────── ÉTAPE 5 : Récupération du contenu détaillé de l’article ─────────────
+            # Affiche l’URL interne à visiter pour récupérer le contenu de l’article
             print(f"    📄 Récupération description: {internal_url}")
+            # Lance le crawl de la page de détail de l’article (dans le pane latéral de CryptoPanic)
             detail_res = await crawler.arun(internal_url, DETAIL_CONF)
+            # Initialise la variable de description (vide par défaut, au cas où rien ne serait trouvé)
             description = ""
+            # Si le crawler a bien extrait du contenu (au format JSON)
             if detail_res.extracted_content:
                 try:
+                    # On charge les données extraites sous forme de liste de dictionnaires
                     detail_data = json.loads(detail_res.extracted_content)
+                    # Si au moins un bloc d’information est présent
                     if detail_data:
+                        # On récupère la description à partir du premier bloc d'information
                         description = detail_data[0].get("description", "")
                 except json.JSONDecodeError:
+                    # Affiche une erreur si le JSON est mal formé ou corrompu
                     print(f"    ⚠️ JSON détail invalide pour {art_id}")
+
+            # Affiche la description extraite (ou un message si rien n’a été trouvé)
             print(f"    ↪ Description: {description or 'pas trouvée'}")
 
             # Pause pour le rate-limit
             await asyncio.sleep(SLEEP_BETWEEN_REQUESTS)
 
+            # Ajoute un dictionnaire représentant l'article enrichi à la liste finale `articles`
             articles.append({
                 "article_id":  art_id,
                 "title":       title,
@@ -187,20 +198,20 @@ async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str
 
 # ────────────────────────────────────────────────────────────────────
 async def main():
-    arts = await fetch_cryptopanic()
+    articles = await fetch_cryptopanic()
     print("\n=== Résultat final ===\n")
-    for idx, a in enumerate(arts, 1):
+    for idx, a in enumerate(articles, 1):
         print(f"{idx:02d}. {a['title']}")
         print(f"    Source    : {a['source']}")
         print(f"    Âge       : {a['time_ago']}")
         print(f"    URL       : {a['canonical']}")
         print(f"    Description: {a['description']}\n")
-    print(f"Total: {len(arts)} articles")
+    print(f"Total: {len(articles)} articles")
 
     # Sauvegarde dans un fichier JSON
     output_file = "cryptopanic_articles.json"
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(arts, f, indent=2, ensure_ascii=False)
+        json.dump(articles, f, indent=2, ensure_ascii=False)
 
     print(f"\n💾 Sauvegardé dans {output_file}")
 
