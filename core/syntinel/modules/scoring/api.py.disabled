@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
 from core.syntinel.db import get_db, Article
-from shared.models import ScoredArticle
+# from core.syntinel.db.models import ScoredArticle
 from core.syntinel.modules.scoring.service import score_articles_batch
 
 router = APIRouter(prefix="/score", tags=["scoring"])

@@ -9,7 +9,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
 # Database connection configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:pswd@postgres:5432/syntineldb")
+# Détection de l'environnement : si DOCKER_ENV est défini, on utilise postgres comme hôte, sinon localhost
+IS_DOCKER = os.environ.get("DOCKER_ENV", "").lower() == "true"
+DEFAULT_HOST = "postgres" if IS_DOCKER else "localhost"
+DEFAULT_PORT = "5432" if IS_DOCKER else "5400"
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    f"postgresql://admin:pswd@{DEFAULT_HOST}:{DEFAULT_PORT}/syntineldb"
+)
+
+# Affiche l'URL de connexion pour le débogage
+print(f"Connexion à la base de données : {DATABASE_URL}")
 
 # Update port if using the updated docker-compose configuration
 if "postgres:5432" in DATABASE_URL and os.environ.get("DB_PORT_UPDATE") == "true":

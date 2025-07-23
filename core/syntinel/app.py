@@ -6,9 +6,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routers
-from core.syntinel.modules.ingestion.api import router as ingestion_router
-from core.syntinel.modules.scoring.api import router as scoring_router
-from core.syntinel.modules.publishing.api import router as publishing_router
+# Module temporairement désactivé
+# from core.syntinel.modules.ingestion.api import router as ingestion_router
+# from core.syntinel.modules.scoring.api import router as scoring_router
+# from core.syntinel.modules.publishing.api import router as publishing_router
 
 # Import database setup
 from core.syntinel.db import create_tables
@@ -17,9 +18,9 @@ from core.syntinel.db import create_tables
 app = FastAPI(title="Syntinel Core")
 
 # Register routers
-app.include_router(ingestion_router)
-app.include_router(scoring_router)
-app.include_router(publishing_router)
+# app.include_router(ingestion_router)
+# app.include_router(scoring_router)
+# app.include_router(publishing_router)
 
 # Create database tables on startup
 @app.on_event("startup")

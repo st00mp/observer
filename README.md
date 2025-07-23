@@ -21,20 +21,24 @@ syntinel/
 ├── core/                     # Central orchestrator
 │   └── syntinel/
 │       ├── orchestrator.py   # Entry point for executing business pipelines
+│       ├── db/              # Database module
+│       │   ├── session.py    # DB connection, engine and session configuration
+│       │   ├── models/       # Database models
+│       │   │   ├── article.py
+│       │   │   └── draft.py
+│       │   └── __init__.py   # Re-exports for easy imports
 │       ├── modules/          # Business modules (FSD)
 │       │   ├── ingestion/    # Extraction, deduplication, normalization, Redis
-│       │   │   ├── ingestion_pipeline.py
+│       │   │   ├── pipeline.py
 │       │   │   └── collector/
 │       │   │       ├── base.py
-│       │   │       └── CryptoPanicCollector.py
+│       │   │       └── cryptopanic_collector.py
 │       │   ├── scoring/      # Relevance scoring logic
 │       │   └── publishing/   # Publishing orchestration
 │       └── Dockerfile        # Build for syntinel-core service
 ├── services/                 # Specialized microservices
 │   ├── writer-agent/         # Content generation via CrewAI
 │   └── telegram-bot/         # Telegram interface for user interaction
-├── shared/                   # Shared models and utilities
-│   └── models/               # Common Pydantic models
 ├── docker-compose.yml        # Container orchestration
 └── .env.example              # Example environment variables
 ```
@@ -152,6 +156,32 @@ This project is a work in progress. Current state:
 ```
 
 I welcome contributions and suggestions — feel free to fork, clone, or reach out.
+
+## 🚀 Usage
+
+### Running the Orchestrator
+
+The orchestrator is the main entry point to run the ingestion pipeline. It provides several options for customization:
+
+```bash
+# Standard execution (ingestion only)
+python -m core.syntinel.orchestrator
+
+# With JSON export (auto-generated filename)
+python -m core.syntinel.orchestrator --export-json
+
+# With JSON export and custom filename
+python -m core.syntinel.orchestrator --export-json --export-path custom_export.json
+```
+
+#### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--export-json` | Enable JSON export of collected articles |
+| `--export-path PATH` | Specify a custom path for the JSON export file |
+
+The JSON export contains both raw article data from collectors and normalized data used for database storage.
 
 ---
 

@@ -17,7 +17,7 @@ BACKOFF_FACTOR = 6
 BASE_URL = "https://cryptopanic.com"
 
 # ARTICLE FETCH CONFIGURATION
-MAX_ARTICLES_TO_FETCH = 2  # Nombre maximum d'articles à récupérer
+MAX_ARTICLES_TO_FETCH = 10  # Nombre maximum d'articles à récupérer
 
 # ─────────────────── CONFIG NAVIGATEUR (JS activé) ───────────────────
 browser_cfg = BrowserConfig(
@@ -197,8 +197,20 @@ async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str
         return articles
 
 # ────────────────────────────────────────────────────────────────────
-async def main():
+async def main(debug=False):
+    """
+    Fonction principale pour l'exécution autonome du collector.
+    
+    Args:
+        debug (bool): Si True, exporte les articles dans un fichier JSON local
+                     pour faciliter les tests et le débogage.
+    
+    Returns:
+        list: Liste des articles collectés
+    """
     articles = await fetch_cryptopanic()
+    
+    # Affichage des résultats pour les tests
     print("\n=== Résultat final ===\n")
     for idx, a in enumerate(articles, 1):
         print(f"{idx:02d}. {a['title']}")
@@ -208,12 +220,15 @@ async def main():
         print(f"    Description: {a['description']}\n")
     print(f"Total: {len(articles)} articles")
 
-    # Sauvegarde dans un fichier JSON
-    output_file = "cryptopanic_articles.json"
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(articles, f, indent=2, ensure_ascii=False)
-
-    print(f"\n💾 Sauvegardé dans {output_file}")
+    # Export JSON uniquement en mode debug/test
+    if debug:
+        output_file = "cryptopanic_articles_debug.json"
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(articles, f, indent=2, ensure_ascii=False)
+        print(f"\n💾 Sauvegardé dans {output_file} (mode debug)")
+    
+    return articles
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # En exécution directe, activer le mode debug par défaut
+    asyncio.run(main(debug=True))
