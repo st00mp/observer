@@ -2,13 +2,11 @@ import os
 import json
 import httpx
 import redis
-from sqlalchemy.orm import Session
-from shared.db import Article
-from typing import Dict, Optional, Any
 import asyncio
-from shared.db import SessionLocal
+from sqlalchemy.orm import Session
+from typing import Dict, Optional, Any, List
+from core.syntinel.db import Article, SessionLocal
 from .collector.CryptoPanicCollector import fetch_cryptopanic
-
 
 # @todos: 
 # Créer fonction filter_duplicates()
@@ -16,53 +14,84 @@ from .collector.CryptoPanicCollector import fetch_cryptopanic
 # Créer fonction save_article()
 # Créer fonction notify_scoring()
 
+# Initialize Redis client at the top level for reuse
+redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
-def normalize(raw: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize raw article dict to Article fields."""
+
+def normalize(article: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize raw article dict to Article fields.
+    
+    This function maps the fields from the crawler's output format
+    to the format expected by our Article model.
+    
+    Args:
+        article: Raw article data from the collector
+        
+    Returns:
+        Dict with normalized fields matching the Article model
+    """
     return {
-        "url": raw.get("canonical") or raw.get("internal"),
-        "title": raw.get("title", ""),
-        "content": raw.get("content", ""),
-        "markdown_content": raw.get("markdown", ""),
-        "source": raw.get("source", ""),
+        "url": article.get("canonical") or article.get("internal"),
+        "title": article.get("title", ""),
+        "content": article.get("description", ""),  # Changed from content to description as per user request
+        "markdown_content": "",  # Set to empty string as per user request
+        "source": article.get("source", ""),
     }
 
 
 def run_ingestion():
-    """Scheduled ingestion pipeline placeholder."""
-    # 1. Ouvrir une session DB
+    """Run the complete ingestion pipeline.
+    
+    This function orchestrates the entire ingestion process:
+    1. Collect new articles from sources
+    2. Filter out duplicates
+    3. Normalize and save new articles
+    4. Notify the scoring module via Redis
+    
+    The design follows a simple batch-processing approach that can be called
+    from a scheduler, cron job, or manually.
+    """
+    # 1. Open a DB session
     db = SessionLocal()
     try:
-        # 2. Liste des collectors à exécuter (ici un seul pour l’exemple)
+        # 2. List of collectors to execute (just one for now, can be expanded later)
         ALL_COLLECTORS = [fetch_cryptopanic]
-
-        # 3. Pour chaque collector, récupérer les nouveaux articles
+        articles_processed = 0
+        articles_saved = 0
+        
+        # 3. For each collector, fetch new articles
         for collector in ALL_COLLECTORS:
+            print(f"Running collector: {collector.__name__}")
             new_articles = asyncio.run(collector())
+            print(f"Found {len(new_articles)} articles from {collector.__name__}")
 
-            # 4. Traiter chaque article renvoyé
+            # 4. Process each article
             for article in new_articles:
-                # 4.1 Vérifier si l’URL existe déjà en base
+                articles_processed += 1
+                
+                # 4.1 Check if article already exists in database
                 exists = db.query(Article).filter(Article.url == article["url"]).first()
                 if exists:
-                    continue  # Ignorer si déjà présent
+                    print(f"Skipping duplicate article: {article['url']}")
+                    continue  # Skip if already present
 
-                # 4.2 Normaliser les données (nettoyage, mapping vers Article)
+                # 4.2 Normalize article data (map fields to Article model)
                 clean = normalize(article)
 
-                # 4.3 Persister l’article normalisé
+                # 4.3 Save normalized article to database
                 article_obj = Article(**clean)
                 db.add(article_obj)
-                db.commit()
+                db.commit()  # Commit to get the ID
                 db.refresh(article_obj)
-
-                # @todo
-                # 4.4 Publier un événement dans Redis pour le module scoring
-                # Recommandation : pour consommer le stream Redis plus efficacement et de manière réactive, utilisez XREAD BLOCK ou son équivalent asynchrone (ex. aioredis + xread bloquant). Cela évite le polling intensif et réduit la charge CPU.
+                articles_saved += 1
+                
+                # 4.4 Publish event to Redis for scoring module
+                # This notifies other modules that a new article is ready for processing
                 redis_client.xadd("new_articles", {"id": str(article_obj.id)})
+                print(f"Article saved and notified: {article_obj.id} - {article_obj.title[:50]}")
 
-        # 5. Log de fin de pipeline
-        print("Scheduled pipeline executed")
+        # 5. Log pipeline completion
+        print(f"Ingestion pipeline completed: {articles_processed} processed, {articles_saved} saved")
     finally:
-        # 6. Toujours fermer la session DB
+        # 6. Always close the DB session
         db.close()
