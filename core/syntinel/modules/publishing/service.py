@@ -1,7 +1,7 @@
 import os
 import httpx
-from shared.db import Article, Draft
-from typing import Dict, Any, Optional
+from core.syntinel.db import Article, Draft
+from typing import Dict, Any
 
 # External service URLs
 WRITER_AGENT_URL = os.getenv("WRITER_AGENT_URL", "http://writer-agent:8000")

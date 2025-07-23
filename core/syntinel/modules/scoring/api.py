@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
-from shared.db import get_db, Article
+from core.syntinel.db import get_db, Article
 from shared.models import ScoredArticle
 from core.syntinel.modules.scoring.service import score_articles_batch
 

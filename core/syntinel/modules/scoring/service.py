@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from shared.db import Article
 from typing import List, Dict
+from core.syntinel.db import Article
 
 def score_articles_batch(db: Session):
     """

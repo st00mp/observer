@@ -11,13 +11,13 @@ from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 # RATE-LIMIT CONFIGURATION
 SLEEP_BETWEEN_REQUESTS = 1  # seconds between each request
 MAX_CANONICAL_RETRIES = 3
-BACKOFF_FACTOR = 2
+BACKOFF_FACTOR = 6
 
 # BASE URL pour construire les URLs complètes
 BASE_URL = "https://cryptopanic.com"
 
 # ARTICLE FETCH CONFIGURATION
-MAX_ARTICLES_TO_FETCH = 10  # Nombre maximum d'articles à récupérer
+MAX_ARTICLES_TO_FETCH = 2  # Nombre maximum d'articles à récupérer
 
 # ─────────────────── CONFIG NAVIGATEUR (JS activé) ───────────────────
 browser_cfg = BrowserConfig(

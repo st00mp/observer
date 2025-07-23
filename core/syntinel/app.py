@@ -11,7 +11,7 @@ from core.syntinel.modules.scoring.api import router as scoring_router
 from core.syntinel.modules.publishing.api import router as publishing_router
 
 # Import database setup
-from shared.db import create_tables
+from core.syntinel.db import create_tables
 
 # Create FastAPI app
 app = FastAPI(title="Syntinel Core")

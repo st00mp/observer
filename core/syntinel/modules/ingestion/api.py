@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import httpx
 
-from shared.db import get_db, Article
+from core.syntinel.db import get_db, Article
 from shared.models import CrawlRequest
 from core.syntinel.modules.ingestion.pipeline import get_cached_article, fetch_article_from_crawl4ai, cache_article
 

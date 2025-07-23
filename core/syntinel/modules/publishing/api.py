@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 
-from shared.db import get_db, Draft, Article
+from core.syntinel.db import get_db, Draft, Article
 from shared.models import GenerateDraftRequest, DraftResponse, ScheduleRequest
 from core.syntinel.modules.publishing.service import generate_content, publish_draft_to_platforms
 
