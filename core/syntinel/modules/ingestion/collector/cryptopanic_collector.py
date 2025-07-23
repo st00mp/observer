@@ -13,13 +13,13 @@ SLEEP_BETWEEN_REQUESTS = 1  # seconds between each request
 MAX_CANONICAL_RETRIES = 3
 BACKOFF_FACTOR = 6
 
-# BASE URL pour construire les URLs complètes
+# BASE URL to build full URLs
 BASE_URL = "https://cryptopanic.com"
 
 # ARTICLE FETCH CONFIGURATION
-MAX_ARTICLES_TO_FETCH = 10  # Nombre maximum d'articles à récupérer
+MAX_ARTICLES_TO_FETCH = 10  # Maximum number of articles to fetch
 
-# ─────────────────── CONFIG NAVIGATEUR (JS activé) ───────────────────
+# ─────────────────── CONFIG NAVIGATOR (JS enabled) ───────────────────
 browser_cfg = BrowserConfig(
     browser_type="chromium",
     headless=True,
@@ -27,7 +27,7 @@ browser_cfg = BrowserConfig(
     ignore_https_errors=True,
 )
 
-# ──────────────── SCHEMA DE LA LISTE ─────────────
+# ──────────────── SCHEMA OF THE LIST ─────────────
 LIST_SCHEMA = {
     "name": "Articles",
     "baseSelector": ".app-main-pane .news-container.ps .news > .news-row.news-row-link",
@@ -45,7 +45,7 @@ LIST_CONF = CrawlerRunConfig(
     extraction_strategy=JsonCssExtractionStrategy(LIST_SCHEMA)
 )
 
-# ──────────────── SCHEMA DE DÉTAIL ─────────────
+# ──────────────── SCHEMA OF DETAIL ─────────────
 DETAIL_SCHEMA = {
     "name": "ArticleDetail",
     "baseSelector": "#detail_pane",
@@ -60,130 +60,131 @@ DETAIL_CONF = CrawlerRunConfig(
     extraction_strategy=JsonCssExtractionStrategy(DETAIL_SCHEMA)
 )
 
-# Expression régulière pour extraire l'ID de l'article
+# Regular expression to extract article ID
 ID_RE = re.compile(r"/news/(\d+)/")
 
-# ─────────────── FONCTION CANONICAL ─────────────
+# ─────────────── CANONICAL FUNCTION ─────────────
 async def canonical(crawler: AsyncWebCrawler, art_id: str) -> Optional[str]:
-    # Définition du schéma à utiliser pour extraire les URLs canoniques
+    # Definition of the schema to use to extract canonical URLs
     canonical_schema = {
-        "name": "CanonicalUrl",           # Nom arbitraire du schéma
-        "baseSelector": "html",           # On cible la racine HTML entière
-        "fields": [                       # Champs à extraire :
-            # 1. Lien canonique standard (HTML)
+        "name": "CanonicalUrl",           # Arbitrary schema name
+        "baseSelector": "html",           # Target the entire HTML root
+        "fields": [                       # Fields to extract :
+            # 1. Standard canonical link (HTML)
             {"name": "canonical", "selector": "link[rel=canonical]",     "type": "attribute", "attribute": "href"},
-            # 2. Lien OpenGraph (souvent utilisé par les réseaux sociaux)
+            # 2. OpenGraph link (commonly used by social networks)
             {"name": "og_url",     "selector": "meta[property='og:url']", "type": "attribute", "attribute": "content"}
         ]
     }
-    # Configuration du crawler pour cette extraction
+    # Crawler configuration for this extraction
     click_conf = CrawlerRunConfig(
-        delay_before_return_html=1, # Attente de 1 seconde avant d'extraire le HTML (utile si JS génère le contenu)
-        extraction_strategy=JsonCssExtractionStrategy(canonical_schema) # On applique le schéma défini ci-dessus
+        delay_before_return_html=1, # Wait for 1 second before extracting HTML (useful if JS generates content)
+        extraction_strategy=JsonCssExtractionStrategy(canonical_schema) # Apply the schema defined above
     )
-    # Initialisation des tentatives de récupération avec gestion du retry
-    attempts = 0                # Nombre de tentatives effectuées
-    delay = 1                   # Temps d'attente avant retry (backoff progressif)
-    # Boucle de récupération avec gestion des erreurs et backoff
+    # Initialization of retrieval attempts with retry management
+    attempts = 0                # Number of attempts made
+    delay = 1                   # Wait time before retry (progressive backoff)
+    # Retrieval loop with error handling and backoff
     while attempts < MAX_CANONICAL_RETRIES:
-        # Exécution du crawl sur l’URL intermédiaire de CryptoPanic
+        # Execution of crawl on the intermediate CryptoPanic URL
         res = await crawler.arun(
-            url=f"{BASE_URL}/news/click/{art_id}/",  # URL du lien cliquable redirigeant vers l’article externe
-            config=click_conf                         # Utilisation de la config dédiée au schéma "canonical"
+            url=f"{BASE_URL}/news/click/{art_id}/",  # URL of the clickable link redirecting to the external article
+            config=click_conf                         # Use the "canonical" schema
         )
 
         if res.extracted_content: 
             try:
-                data_list = json.loads(res.extracted_content)  # Décodage du JSON retourné par l'extracteur
+                data_list = json.loads(res.extracted_content)  # Decode the JSON returned by the extractor
                 if data_list:
-                    first = data_list[0]  # On prend le premier élément (normalement il n’y en a qu’un)
-                    # On retourne l'URL canonique si trouvée, sinon l’URL OpenGraph
+                    first = data_list[0]  # Take the first element (normally there is only one)
+                    # Return the canonical URL if found, otherwise the OpenGraph URL
                     return first.get("canonical") or first.get("og_url")
             except json.JSONDecodeError:
-                pass  # Si le JSON est mal formé, on ignore cette tentative
+                pass  # If the JSON is malformed, ignore this attempt
         
-        # Si la tentative a échoué, on affiche un message et on attend avant de réessayer
+        # If the attempt failed, display a message and wait before retrying
         attempts += 1
-        print(f"    ⚠️ Échec canonical (tentative {attempts}/{MAX_CANONICAL_RETRIES}), retry dans {delay}s")
-        await asyncio.sleep(delay)  # Pause avant retry
-        delay *= BACKOFF_FACTOR     # Augmente le délai (ex: 1s, 2s, 4s…)
+        print(f"    ⚠️ Canonical failure (attempt {attempts}/{MAX_CANONICAL_RETRIES}), retry in {delay}s")
+        await asyncio.sleep(delay)  # Pause before retry
+        delay *= BACKOFF_FACTOR     # Increase the delay (e.g: 1s, 2s, 4s…)
 
-    # Si aucune tentative n’a abouti, on retourne None
+    # If no attempt succeeded, return None
     return None
 
-# ─────────────────────── PIPELINE PRINCIPAL ───────────────────────
+# ─────────────────────── MAIN PIPELINE ───────────────────────
 async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str, Any]]:
-    """Récupère la liste des articles et leurs descriptions"""
+    """Retrieve the list of articles and their descriptions"""
     async with AsyncWebCrawler(config=browser_cfg) as crawler:
 
-        # ───────────── ÉTAPE 1 : Récupération et parsing de la liste d'articles ─────────────
-        # Exécute un crawl sur la page principale des actualités
+        # ───────────── STEP 1 : Retrieve and parsing of the article list ─────────────
+        # Execute a crawl on the main news page
         lst_res = await crawler.arun(f"{BASE_URL}/news/", LIST_CONF)
-        # Décode la réponse JSON extraite par le crawler en une liste de dictionnaires (chaque élément = un article brut)
+        # Decode the JSON extracted by the crawler into a list of dictionaries (each element = a raw article)
         raw_items = json.loads(lst_res.extracted_content)
         if limit:
             raw_items = raw_items[:limit]
         total = len(raw_items)
 
-        # ───────────── ÉTAPE 2 : Préparation et itération sur chaque article ─────────────
-        # Préparation d'une liste vide qui contiendra les articles enrichis
+        # ───────────── STEP 2 : Preparation and iteration over each article ─────────────
+        # Prepare an empty list that will contain enriched articles
         articles: List[Dict[str, Any]] = []
-        # Boucle sur chaque article brut extrait (raw_items), en numérotant à partir de 1 pour l'affichage
+        # Loop over each raw article extracted (raw_items), numbering from 1 for display
         for idx, item in enumerate(raw_items, start=1):
             title    = item.get("title", "")
             time_ago = item.get("time_ago", "")
-            # Affiche dans la console l’état d’avancement du traitement avec le titre et l’âge de l’article
+            # Display the progress of the processing in the console with the title and age of the article
             print(f"[{idx}/{total}] → {title} (il y a {time_ago})")
 
-            # ───────────── ÉTAPE 3 : Extraction de l'ID unique de l'article ─────────────
-            # Récupère l'URL interne de l'article, ex: "/news/123456/"
+            # ───────────── STEP 3 : Extraction of the unique article ID ─────────────
+            # Retrieve the internal URL of the article, ex: "/news/123456/"
             href = item.get("internal_url", "")
 
-            # Applique l'expression régulière pour extraire l'ID numérique (ex: 123456)
+            # Apply the regular expression to extract the numeric ID (ex: 123456)
             m = ID_RE.search(href)
 
-            # Si aucun match (ID) n'est trouvé, on affiche un avertissement et on passe à l'article suivant
+            # If no match (ID) is found, display a warning and skip to the next article
             if not m:
-                print(f"    ⚠️ pas d’ID trouvé, on skip")
+                print(f"    ⚠️ no ID found, skipping")
                 continue
 
-            # Si un match (ID) est trouvé, on l'extrait depuis le groupe capturé par la regex
-            art_id = m.group(1)     # Le groupe 1 correspond à la première sous-partie capturée entre parenthèses dans la regex (ici : l’ID numérique après /news/)
+            # If a match (ID) is found, extract it from the regex group
+            art_id = m.group(1)     # The group 1 corresponds to the first captured part between parentheses in the regex (here: the numeric ID after /news/)
 
-            # ───────────── ÉTAPE 4 : Extraction des URLs (internes et canoniques) ─────────────
-            # Construction de l'URL complète vers la page interne de l'article sur CryptoPanic
+            # ───────────── STEP 4 : Extraction of URLs (internal and canonical) ─────────────
+            # Construction of the complete internal URL to the article on CryptoPanic
             internal_url = urljoin(BASE_URL, href)
-            # Tentative de récupération de l’URL canonique (= lien source original de l’article externe)
-            canon = await canonical(crawler, art_id)
-            print(f"    ↪ Canonical URL: {canon or 'pas trouvé'}")
 
-            # ───────────── ÉTAPE 5 : Récupération du contenu détaillé de l’article ─────────────
-            # Affiche l’URL interne à visiter pour récupérer le contenu de l’article
-            print(f"    📄 Récupération description: {internal_url}")
-            # Lance le crawl de la page de détail de l’article (dans le pane latéral de CryptoPanic)
+            # Try to retrieve the canonical URL (original source link of the external article)
+            canon = await canonical(crawler, art_id)
+            print(f"    ↪ Canonical URL: {canon or 'not found'}")
+
+            # ───────────── STEP 5 : Retrieve the detailed content of the article ─────────────
+            # Display the internal URL to visit to retrieve the article content
+            print(f"    📄 Retrieve description: {internal_url}")
+            # Launch the crawl of the article detail page (in the CryptoPanic sidebar)
             detail_res = await crawler.arun(internal_url, DETAIL_CONF)
-            # Initialise la variable de description (vide par défaut, au cas où rien ne serait trouvé)
+            # Initialize the description variable (empty by default, in case nothing is found)
             description = ""
-            # Si le crawler a bien extrait du contenu (au format JSON)
+            # If the crawler successfully extracted content (in JSON format)
             if detail_res.extracted_content:
                 try:
-                    # On charge les données extraites sous forme de liste de dictionnaires
+                    # Load the extracted data as a list of dictionaries
                     detail_data = json.loads(detail_res.extracted_content)
-                    # Si au moins un bloc d’information est présent
+                    # If at least one information block is present
                     if detail_data:
-                        # On récupère la description à partir du premier bloc d'information
+                        # Get the description from the first information block
                         description = detail_data[0].get("description", "")
                 except json.JSONDecodeError:
-                    # Affiche une erreur si le JSON est mal formé ou corrompu
-                    print(f"    ⚠️ JSON détail invalide pour {art_id}")
+                    # Display an error if the JSON is malformed or corrupted
+                    print(f"    ⚠️ JSON detail invalid for {art_id}")
 
-            # Affiche la description extraite (ou un message si rien n’a été trouvé)
-            print(f"    ↪ Description: {description or 'pas trouvée'}")
+            # Display the extracted description (or a message if nothing was found)
+            print(f"    ↪ Description: {description or 'not found'}")
 
-            # Pause pour le rate-limit
+            # Pause for rate-limiting
             await asyncio.sleep(SLEEP_BETWEEN_REQUESTS)
 
-            # Ajoute un dictionnaire représentant l'article enrichi à la liste finale `articles`
+            # Add a dictionary representing the enriched article to the final `articles` list
             articles.append({
                 "article_id":  art_id,
                 "title":       title,
@@ -199,36 +200,36 @@ async def fetch_cryptopanic(limit: int = MAX_ARTICLES_TO_FETCH) -> List[Dict[str
 # ────────────────────────────────────────────────────────────────────
 async def main(debug=False):
     """
-    Fonction principale pour l'exécution autonome du collector.
+    Main function for autonomous collector execution.
     
     Args:
-        debug (bool): Si True, exporte les articles dans un fichier JSON local
-                     pour faciliter les tests et le débogage.
+        debug (bool): If True, exports articles to a local JSON file
+                     to facilitate testing and debugging.
     
     Returns:
-        list: Liste des articles collectés
+        list: List of collected articles
     """
     articles = await fetch_cryptopanic()
     
-    # Affichage des résultats pour les tests
-    print("\n=== Résultat final ===\n")
+    # Display the final results for testing
+    print("\n=== Final result ===\n")
     for idx, a in enumerate(articles, 1):
         print(f"{idx:02d}. {a['title']}")
         print(f"    Source    : {a['source']}")
-        print(f"    Âge       : {a['time_ago']}")
+        print(f"    Age       : {a['time_ago']}")
         print(f"    URL       : {a['canonical']}")
         print(f"    Description: {a['description']}\n")
     print(f"Total: {len(articles)} articles")
 
-    # Export JSON uniquement en mode debug/test
+    # Export JSON only in debug/test mode
     if debug:
         output_file = "cryptopanic_articles_debug.json"
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(articles, f, indent=2, ensure_ascii=False)
-        print(f"\n💾 Sauvegardé dans {output_file} (mode debug)")
+        print(f"\n💾 Saved to {output_file} (debug mode)")
     
     return articles
 
 if __name__ == "__main__":
-    # En exécution directe, activer le mode debug par défaut
+    # Run in debug mode when executed directly
     asyncio.run(main(debug=True))

@@ -14,21 +14,21 @@ class Article(Base):
     
     __tablename__ = "articles"
     
-    # Identifiants et URLs
-    id = Column(Integer, primary_key=True, index=True)  # ID interne
-    article_id = Column(String, index=True)  # ID de l'article sur CryptoPanic
-    internal_url = Column(String, unique=True, index=True)  # URL sur CryptoPanic
-    canonical_url = Column(String)  # URL externe (source originale)
+    # Identifiers and URLs
+    id = Column(Integer, primary_key=True, index=True)  # Internal ID    
+    article_id = Column(String, index=True)  # Article ID on CryptoPanic
+    internal_url = Column(String, unique=True, index=True)  # URL on CryptoPanic
+    canonical_url = Column(String)  # URL external (source original)
     
-    # Contenu
+    # Content
     title = Column(String)
-    content = Column(Text)  # Description textuelle
-    markdown_content = Column(Text)  # Version markdown si disponible
+    content = Column(Text)  # Text description
+    markdown_content = Column(Text)  # Markdown version if available
     
-    # Métadonnées
-    ingestion_timestamp = Column(DateTime, default=datetime.utcnow)  # Date d'ingestion
-    published_at = Column(DateTime)  # Date de publication estimée
-    source = Column(String)  # Source de l'article (domaine)
+    # Metadata
+    ingestion_timestamp = Column(DateTime, default=datetime.utcnow)  # Ingestion date
+    published_at = Column(DateTime)  # Published date
+    source = Column(String)  # Source domain
     
     # Scoring
     panic_score = Column(Float, default=0.0)

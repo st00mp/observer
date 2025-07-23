@@ -27,12 +27,12 @@ def normalize(article: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dict with normalized fields matching the Article model
     """
-    # Conversion time_ago en datetime pour published_at
+    # Convert time_ago to datetime for published_at
     published_at = None
     time_ago = article.get("time_ago", "")
     if time_ago:
         try:
-            # Analyser time_ago (format "10min", "1h", etc.)
+            # Analyze time_ago (format "10min", "1h", etc.)
             from datetime import datetime, timedelta
             now = datetime.utcnow()
             
@@ -46,24 +46,24 @@ def normalize(article: Dict[str, Any]) -> Dict[str, Any]:
                 days = int(time_ago.replace("d", "").strip())
                 published_at = now - timedelta(days=days)
         except Exception as e:
-            print(f"Avertissement: Impossible d'analyser time_ago '{time_ago}': {e}")
+            print(f"Warning: Unable to parse time_ago '{time_ago}': {e}")
     
     return {
-        # Identifiants et URLs
+        # Identifiers and URLs
         "article_id": article.get("article_id", ""),
         "internal_url": article.get("internal", ""),
         "canonical_url": article.get("canonical", ""),
         
-        # Contenu
+        # Content
         "title": article.get("title", ""),
         "content": article.get("description", ""),
-        "markdown_content": "",  # Vide par défaut, à enrichir plus tard
+        "markdown_content": "",  # Empty by default, to be enriched later
         
-        # Métadonnées
+        # Metadata
         "source": article.get("source", ""),
         "published_at": published_at,
         
-        # Les scores sont initialisés par défaut dans le modèle
+        # Scores are initialized by default in the model
     }
 
 
@@ -80,13 +80,13 @@ def run_ingestion(export_json=False, export_path=None):
     from a scheduler, cron job, or manually.
     
     Args:
-        export_json (bool): Si True, exporte les articles collectés au format JSON
-        export_path (str): Chemin du fichier d'export JSON. Si None, utilise un nom par défaut
+        export_json (bool): If True, exports collected articles to JSON format
+        export_path (str): Path to the JSON export file. If None, uses a default name
     """
     # 1. Open a DB session
     db = SessionLocal()
     try:
-        # Pour l'export JSON si activé
+        # For JSON export if enabled
         collected_articles = []
         
         # 2. List of collectors to execute (just one for now, can be expanded later)
@@ -108,63 +108,62 @@ def run_ingestion(export_json=False, export_path=None):
                 articles_processed += 1
                 
                 # 4.1 Check if article already exists in database
-                # Déterminer l'URL interne pour la recherche de duplicats
                 internal_url = article.get("internal", "")
                 if not internal_url:
                     missing_url_skipped += 1
                     continue
                 
-                # Vérifier si l'article existe déjà par son URL interne (CryptoPanic)
+                # 4.2 Verify if article already exists in database
                 exists = db.query(Article).filter(Article.internal_url == internal_url).first()
                 if exists:
                     duplicates_skipped += 1
                     continue  # Skip if already present
 
-                # 4.2 Normalize article data (map fields to Article model)
+                # 4.3 Normalize article data (map fields to Article model)
                 clean = normalize(article)
                 
-                # Ajouter à la liste d'articles collectés pour export JSON si activé
+                # 4.4 Add to list of articles collected for JSON export if enabled
                 if export_json:
                     collected_articles.append({
-                        # Données brutes de l'article
+                        # Raw article data
                         "raw": article,
-                        # Données normalisées
+                        # Normalized article data
                         "normalized": clean
                     })
 
-                # 4.3 Save normalized article to database
+                # 4.5 Save normalized article to database
                 article_obj = Article(**clean)
                 db.add(article_obj)
                 db.commit()  # Commit to get the ID
-                # 4.4 Publish article ID to Redis for further processing
+                # 4.6 Publish article ID to Redis for further processing
                 # This notifies other modules that a new article is ready for processing
                 try:
                     stream_add_result = redis_client.xadd(
-                        "new_articles",  # Nom du stream
-                        {"id": str(article_obj.id)},  # Contenu du message
-                        id="*"  # Auto-généré par Redis
+                        "new_articles",  # Stream name
+                        {"id": str(article_obj.id)},  # Message content
+                        id="*"  # Auto-generated by Redis
                     )
                     articles_saved += 1
                 except Exception as e:
                     print(f"Error publishing to Redis: {e}")
         
-        # 5. Export JSON si demandé
+        # 5. Export JSON if requested
         if export_json and collected_articles:
             from datetime import datetime
             
-            # Générer un nom de fichier par défaut si non spécifié
+            # Generate default file name if not specified
             if not export_path:
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 export_path = f"syntinel_articles_{timestamp}.json"
             
-            # Créer un encodeur JSON personnalisé pour gérer les objets datetime
+            # Create a custom JSON encoder to handle datetime objects
             class DateTimeEncoder(json.JSONEncoder):
                 def default(self, obj):
                     if isinstance(obj, datetime):
                         return obj.isoformat()
                     return super().default(obj)
             
-            # Générer le fichier JSON
+            # Generate JSON file
             try:
                 with open(export_path, "w", encoding="utf-8") as f:
                     json.dump(collected_articles, f, indent=2, ensure_ascii=False, cls=DateTimeEncoder)
@@ -174,14 +173,14 @@ def run_ingestion(export_json=False, export_path=None):
         
         # 6. Report results
         print("\n" + "="*50)
-        print("RAPPORT D'INGESTION")
+        print("INGESTION REPORT")
         print("="*50)
-        print(f"Articles traités:   {articles_processed}")
-        print(f"Articles sauvegardés: {articles_saved}")
+        print(f"Articles processed:   {articles_processed}")
+        print(f"Articles saved: {articles_saved}")
         if duplicates_skipped > 0:
-            print(f"Doublons ignorés:  {duplicates_skipped}")
+            print(f"Duplicates skipped:  {duplicates_skipped}")
         if missing_url_skipped > 0:
-            print(f"Sans URL ignorés: {missing_url_skipped}")
+            print(f"Missing URL skipped: {missing_url_skipped}")
         if export_json and collected_articles:
             print(f"Export JSON: {export_path}")
         print("="*50)
