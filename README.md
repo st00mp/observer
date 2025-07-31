@@ -165,13 +165,13 @@ The orchestrator is the main entry point to run the ingestion pipeline. It provi
 
 ```bash
 # Standard execution (ingestion only)
-python -m core.syntinel.orchestrator
+python -m core.orchestrator
 
 # With JSON export (auto-generated filename)
-python -m core.syntinel.orchestrator --export-json
+python -m core.orchestrator --export-json
 
 # With JSON export and custom filename
-python -m core.syntinel.orchestrator --export-json --export-path custom_export.json
+python -m core.orchestrator --export-json --export-path custom_export.json
 ```
 
 #### CLI Options

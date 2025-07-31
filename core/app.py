@@ -7,12 +7,12 @@ load_dotenv()
 
 # Import routers
 # Module temporairement désactivé
-# from core.syntinel.modules.ingestion.api import router as ingestion_router
-# from core.syntinel.modules.scoring.api import router as scoring_router
-# from core.syntinel.modules.publishing.api import router as publishing_router
+# from core.modules.ingestion.api import router as ingestion_router
+# from core.modules.scoring.api import router as scoring_router
+# from core.modules.publishing.api import router as publishing_router
 
 # Import database setup
-from core.syntinel.db import create_tables
+from core.db import create_tables
 
 # Create FastAPI app
 app = FastAPI(title="Syntinel Core")

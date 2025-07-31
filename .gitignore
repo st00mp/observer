@@ -10,3 +10,6 @@ __pycache__/
 
 # Cookies
 cookies.txt
+
+# Artefacts
+syntinel.egg-info/

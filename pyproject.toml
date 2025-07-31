@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "syntinel"
+version = "0.1.0"
+description = "Syntinel - Système de surveillance et d'analyse d'informations"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+
+# Dépendances communes à tous les composants du projet
+dependencies = [
+    # Core
+    "fastapi==0.116.1",
+    "uvicorn==0.35.0",
+    "httpx>=0.28.1",
+    "sqlalchemy>=2.0.42",
+    "psycopg2-binary==2.9.9",
+    "redis==6.2.0",
+    "python-dotenv==1.0.0",
+    "pydantic>=2.11.7",
+    "python-multipart==0.0.18",
+    "alembic>=1.13.1",
+    "celery==5.5.3",
+    
+    # Web crawling (utilisé dans les collecteurs)
+    "crawl4ai==0.6.3",
+    
+    # Pour le script monitor_redis.py
+    "rich",
+]
+
+# Définition des groupes de dépendances optionnelles
+[project.optional-dependencies]
+# Dépendances spécifiques pour le bot Telegram
+telegram = [
+    "python-telegram-bot==13.15",
+]
+
+# Dépendances spécifiques pour l'agent d'écriture
+writer = [
+    "crewai[tools]==0.28.0",
+    "jinja2==3.1.6", 
+    # Utiliser une version compatible avec crewai (qui impose langchain<0.2.0)
+    "langchain>=0.1.10,<0.2.0",
+]
+
+# Dépendances de développement
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[tool.setuptools]
+packages = ["core", "scripts"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

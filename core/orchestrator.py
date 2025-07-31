@@ -1,7 +1,7 @@
 import argparse
-from core.syntinel.modules.ingestion.pipeline import run_ingestion
-# from core.syntinel.modules.scoring.service import score_all_unprocessed
-# from core.syntinel.modules.publishing.service import maybe_auto_publish
+from core.modules.ingestion.pipeline import run_ingestion
+# from core.modules.scoring.service import score_all_unprocessed
+# from core.modules.publishing.service import maybe_auto_publish
 
 
 def full_run(export_json=False, export_path=None):

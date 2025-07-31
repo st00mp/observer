@@ -1,6 +1,6 @@
 import os
 import httpx
-from core.syntinel.db import Article, Draft
+from core.db import Article, Draft
 from typing import Dict, Any
 
 # External service URLs

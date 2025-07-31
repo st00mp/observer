@@ -4,7 +4,7 @@ import httpx
 import redis
 import asyncio
 from typing import Dict, Optional, Any, List
-from core.syntinel.db import Article, SessionLocal
+from core.db import Article, SessionLocal
 from .collector.cryptopanic_collector import fetch_cryptopanic
 
 # Initialize Redis client at the top level for reuse
