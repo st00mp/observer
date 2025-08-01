@@ -130,6 +130,19 @@ def setup_environment():
         run_command("crawl4ai-setup", "Configuration de crawl4ai avec Playwright", exit_on_error=False)
     else:
         print("⚠️ Commande crawl4ai-setup non trouvée. Veuillez l'exécuter manuellement après l'installation:\n   crawl4ai-setup")
+    
+    # Créer un fichier .last_setup avec le hash de pyproject.toml
+    try:
+        import hashlib
+        with open("pyproject.toml", "rb") as f:
+            pyproject_hash = hashlib.md5(f.read()).hexdigest()
+        
+        os.makedirs(".venv", exist_ok=True)  # Assurer que le dossier .venv existe
+        with open(".venv/.last_setup", "w") as f:
+            f.write(pyproject_hash)
+        print("✅ Marqueur d'environnement à jour créé")
+    except Exception as e:
+        print(f"⚠️ Impossible de créer le marqueur d'environnement: {e}")
               
     # Configuration de direnv
     setup_direnv()
