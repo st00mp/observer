@@ -141,6 +141,8 @@ This script will:
 - Configure crawl4ai with Playwright
 - Set up direnv for automatic environment activation
 
+> **Note**: If you modify the `.envrc` file or pull changes that modify it, you'll need to run `direnv allow` to authorize the changes for security reasons.
+
 ### Monitoring Tools
 
 To monitor the Redis streams during development:
