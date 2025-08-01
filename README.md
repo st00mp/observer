@@ -125,10 +125,36 @@ docker-compose up -d
 
 ---
 
-## 🛠 Development
-	•	Syntinel-Core: orchestrator, pipelines, ingestion workers
-	•	Services: isolated, pluggable APIs
-	•	Shared: Pydantic models and common utilities
+## 🛠 Development Setup
+
+The project includes an automated setup script to initialize your development environment quickly and easily:
+
+```bash
+# Run the development setup script from the project root
+python scripts/setup_dev.py
+```
+
+This script will:
+- Check for and install required tools (uv, direnv)
+- Set up a Python virtual environment (.venv)
+- Install project dependencies using uv
+- Configure crawl4ai with Playwright
+- Set up direnv for automatic environment activation
+
+### Monitoring Tools
+
+To monitor the Redis streams during development:
+
+```bash
+# Run the Redis monitoring script
+python scripts/monitor_redis.py
+```
+
+## 🛠 Development Architecture
+
+- Syntinel-Core: orchestrator, pipelines, ingestion workers
+- Services: isolated, pluggable APIs
+- Shared: Pydantic models and common utilities
 
 ---
 
